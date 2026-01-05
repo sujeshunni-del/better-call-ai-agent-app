@@ -1,0 +1,7 @@
+{
+  "name": "Better Call Immigration",
+  "description": "AI-Powered Multi-Language Immigration Consultancy Portal",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}

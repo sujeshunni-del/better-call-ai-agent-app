@@ -42,7 +42,10 @@ const App: React.FC = () => {
   const currentOutputTranscriptionRef = useRef('');
 
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const timer = setTimeout(() => {
+      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
+    return () => clearTimeout(timer);
   }, [messages, isTyping]);
 
   useEffect(() => {
@@ -182,7 +185,7 @@ const App: React.FC = () => {
   };
 
   const renderLanding = () => (
-    <div className="flex flex-col h-screen bg-[#fdfdff] font-jakarta overflow-hidden">
+    <div className="flex flex-col h-screen h-[100dvh] bg-[#fdfdff] font-jakarta overflow-hidden">
       <div className="flex-1 overflow-y-auto ios-scroll">
         <header className="px-6 pt-16 pb-12 bg-white border-b border-slate-100 text-center relative overflow-hidden shrink-0">
           <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/10 rounded-full blur-[80px]"></div>
@@ -248,7 +251,7 @@ const App: React.FC = () => {
   );
 
   const renderAgentSelection = () => (
-    <div className="flex flex-col h-screen bg-[#f8fafc] overflow-hidden">
+    <div className="flex flex-col h-screen h-[100dvh] bg-[#f8fafc] overflow-hidden">
       <header className="px-6 pt-16 pb-6 flex items-center justify-between bg-white border-b border-slate-100 sticky top-0 z-[100] shrink-0">
         <div className="flex items-center gap-4">
           <button onClick={() => setView('landing')} className="p-2 -ml-2 text-slate-900 active:scale-90 transition-transform">
@@ -286,7 +289,7 @@ const App: React.FC = () => {
   );
 
   const renderModeSelection = () => (
-    <div className="flex flex-col h-screen bg-[#fdfdff] font-jakarta px-6 overflow-hidden">
+    <div className="flex flex-col h-screen h-[100dvh] bg-[#fdfdff] font-jakarta px-6 overflow-hidden">
       <div className="flex-1 flex flex-col justify-center items-center">
         <div className="text-center mb-10">
           <div className="text-6xl mb-6">{selectedAgent?.flag}</div>
@@ -339,7 +342,7 @@ const App: React.FC = () => {
   );
 
   const renderChat = () => (
-    <div className="flex flex-col h-screen bg-white overflow-hidden relative">
+    <div className="flex flex-col h-screen h-[100dvh] bg-white overflow-hidden relative">
       <header className="px-5 pt-16 pb-4 bg-white border-b border-slate-100 flex items-center justify-between sticky top-0 z-[100] shrink-0">
         <div className="flex items-center gap-3">
           <button onClick={() => { setView('mode-selection'); setMessages([]); }} className="p-2 -ml-2 text-slate-900 active:scale-90 transition-transform">
@@ -364,7 +367,7 @@ const App: React.FC = () => {
         </button>
       </header>
 
-      <main className="flex-1 overflow-y-auto px-5 py-6 space-y-6 ios-scroll bg-slate-50/30">
+      <main className="flex-1 overflow-y-auto px-5 py-6 space-y-6 ios-scroll bg-slate-50/30 min-h-0">
         {messages.map((msg) => (
           <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-in slide-in-from-bottom-2`}>
             <div className={`max-w-[85%] p-4 rounded-[1.75rem] ${
@@ -390,11 +393,11 @@ const App: React.FC = () => {
             </div>
           </div>
         )}
-        <div ref={chatEndRef} className="h-4" />
+        <div ref={chatEndRef} className="h-10" />
       </main>
 
       {!isLiveVoice && (
-        <footer className="px-5 pt-4 pb-12 bg-white/80 backdrop-blur-md border-t border-slate-100 safe-bottom shrink-0">
+        <footer className="px-5 pt-4 pb-12 bg-white/80 backdrop-blur-md border-t border-slate-100 safe-bottom shrink-0 z-10">
           <div className="bg-slate-50 rounded-[1.75rem] p-2 flex items-center border border-slate-200 focus-within:bg-white focus-within:shadow-xl transition-all max-w-lg mx-auto">
             <textarea
               rows={1}
@@ -419,7 +422,7 @@ const App: React.FC = () => {
         <div className="fixed inset-0 z-[1000] bg-slate-950 flex flex-col items-center animate-in slide-in-from-bottom overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-b from-indigo-600/10 via-transparent to-violet-600/10 pointer-events-none"></div>
           
-          <div className="flex-1 w-full overflow-y-auto ios-scroll flex flex-col items-center py-16 px-8 space-y-12">
+          <div className="flex-1 w-full overflow-y-auto ios-scroll flex flex-col items-center py-16 px-8 space-y-12 min-h-0">
             <div className="text-center relative z-10">
               <div className="text-7xl mb-8 drop-shadow-2xl">{selectedAgent?.flag}</div>
               <h2 className="text-3xl font-black uppercase text-white">{selectedAgent?.nativeName}</h2>
@@ -440,6 +443,7 @@ const App: React.FC = () => {
                 </p>
               </div>
             </div>
+            <div className="h-20 shrink-0" />
           </div>
 
           <div className="w-full px-8 pb-16 pt-6 flex justify-center bg-gradient-to-t from-slate-950 to-transparent shrink-0">
@@ -453,7 +457,7 @@ const App: React.FC = () => {
   );
 
   return (
-    <div className="h-screen bg-white">
+    <div className="h-screen h-[100dvh] bg-white">
       {view === 'landing' && renderLanding()}
       {view === 'agent-selection' && renderAgentSelection()}
       {view === 'mode-selection' && renderModeSelection()}

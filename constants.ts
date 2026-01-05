@@ -19,32 +19,12 @@ export const AGENTS: Agent[] = [
 
 export const ADVISORS: Advisor[] = [
   {
-    id: 'benitta',
-    name: 'Benitta',
-    initials: 'BN',
-    calApiKey: 'cal_live_benitta_placeholder',
-    meetSlug: '30min',
-    officeSlug: 'office-visit',
-    languages: ['Malayalam', 'English'],
-    phone: '+971 56 955 3355'
-  },
-  {
-    id: 'eunice',
-    name: 'Eunice',
-    initials: 'EU',
-    calApiKey: 'cal_live_eunice_placeholder',
-    meetSlug: '30min',
-    officeSlug: 'office-visit',
-    languages: ['English', 'Swahili'],
-    phone: '+971 54 263 2323'
-  },
-  {
     id: 'sagar',
     name: 'Sagar',
     initials: 'SG',
-    calApiKey: 'cal_live_sagar_placeholder',
-    meetSlug: '30min',
-    officeSlug: 'office-visit',
+    calApiKey: 'cal_live_56464d96cd70d67aa7588d6735ad55ed',
+    meetSlug: 'meet-conference',
+    officeSlug: 'meet-conference',
     languages: ['Malayalam', 'English'],
     phone: '+971 56 455 7733'
   },
@@ -52,11 +32,31 @@ export const ADVISORS: Advisor[] = [
     id: 'afnas',
     name: 'Afnas',
     initials: 'AF',
-    calApiKey: 'cal_live_afnas_placeholder',
-    meetSlug: '30min',
-    officeSlug: 'office-visit',
+    calApiKey: 'cal_live_82b9340d588920d9c9270052d13db98a',
+    meetSlug: 'google-meet',
+    officeSlug: '30min',
     languages: ['Malayalam', 'English', 'Tamil', 'Hindi'],
     phone: '+971 56 132 2255'
+  },
+  {
+    id: 'eunice',
+    name: 'Eunice',
+    initials: 'EU',
+    calApiKey: 'cal_live_9489b42b4b6e4cdb8c144e8150fa62c9',
+    meetSlug: '30min',
+    officeSlug: 'direct-face-to-face',
+    languages: ['English', 'Swahili'],
+    phone: '+971 54 263 2323'
+  },
+  {
+    id: 'benitta',
+    name: 'Benitta',
+    initials: 'BN',
+    calApiKey: 'cal_live_1ac079710d9a52668ea733b71fe287bf',
+    meetSlug: 'google-meet',
+    officeSlug: '30min',
+    languages: ['Malayalam', 'English'],
+    phone: '+971 56 955 3355'
   }
 ];
 

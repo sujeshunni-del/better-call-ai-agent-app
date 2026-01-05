@@ -3,48 +3,48 @@ import { GoogleGenAI, Modality } from "@google/genai";
 import { COMPANY_INFO, KNOWLEDGE_BASE } from "../constants";
 import { Agent } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || 'FAKE_API_KEY_FOR_DEVELOPMENT' });
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 const LANGUAGE_BEHAVIOR: Record<string, { greeting: string, style: string, fillers: string }> = {
   'Malayalam': { 
-    greeting: 'à´¨à´®à´¸àµà´à´¾à´°à´ (Namaskaram)', 
+    greeting: 'നമസ്കാരം (Namaskaram)', 
     style: 'Warm, youthful, and professional Keralite hospitality.',
-    fillers: 'à´®àµà´®àµ (hmm), à´ªà´¿à´¨àµà´¨àµ (well), à´¨àµà´àµà´à´àµà´àµ (let me see)'
+    fillers: 'മ്മ് (hmm), പിന്നെ (well), നോക്കട്ടെ (let me see)'
   },
   'Tamil': { 
-    greeting: 'à®µà®£à®à¯à®à®®à¯ (Vanakkam)', 
+    greeting: 'வணக்கம் (Vanakkam)', 
     style: 'Bright, cheerful, and smart South Indian vibe.',
-    fillers: 'à®®à¯à®®à¯ (hmm), à®à®°à®¿ (well), à®ªà®¾à®à¯à®à®²à®¾à®®à¯ (let me see)'
+    fillers: 'ம்ம் (hmm), சரி (well), பாக்கலாம் (let me see)'
   },
   'Arabic': { 
-    greeting: 'Ø§ÙØ³ÙØ§Ù Ø¹ÙÙÙÙ (Assalam Alaikum)', 
+    greeting: 'السلام عليكم (Assalam Alaikum)', 
     style: 'Modern, generous, and welcoming Middle-Eastern style.',
-    fillers: 'ÙÙÙ (hmm), Ø·ÙØ¨ (well), Ø£Ø´ÙÙ (let me see)'
+    fillers: 'ممم (hmm), طيب (well), أشوف (let me see)'
   },
   'Urdu': { 
-    greeting: 'Ø§ÙØ³ÙØ§Ù Ø¹ÙÛÚ©Ù (Assalam Alaikum)', 
+    greeting: 'السلام علیکم (Assalam Alaikum)', 
     style: 'Polite, sweet, and helpful with a youthful touch.',
-    fillers: 'ÛÙÚº (hmm), ØªÙ (well), Ø¯ÛÚ©Ú¾ÙÛ Ø¯ÛÚº (let me see)'
+    fillers: 'ہوں (hmm), تو (well), دیکھنے دیں (let me see)'
   },
   'Hindi': { 
-    greeting: 'à¤¨à¤®à¤¸à¥à¤¤à¥ (Namaste)', 
+    greeting: 'नमस्ते (Namaste)', 
     style: 'Friendly, modern, and energetic North Indian style.',
-    fillers: 'à¤¹à¤®à¥à¤® (hmm), à¤¤à¥ (well), à¤¦à¥à¤à¤¤à¥ à¤¹à¥à¤ (let me see)'
+    fillers: 'हम्म (hmm), तो (well), देखते हैं (let me see)'
   },
   'Telugu': { 
-    greeting: 'à°¨à°®à°¸à±à°à°¾à°°à° (Namaskaram)', 
+    greeting: 'నమస్కారం (Namaskaram)', 
     style: 'Smart, polite, and welcoming.',
-    fillers: 'à°®à±à°®à± (hmm), à°¸à°°à± (well), à°à±à°¦à±à°¦à°¾à° (let me see)'
+    fillers: 'మ్మ్ (hmm), సరే (well), చూద్దాం (let me see)'
   },
   'Kannada': { 
-    greeting: 'à²¨à²®à²¸à³à²à²¾à²° (Namaskara)', 
+    greeting: 'ನಮಸ್ಕಾರ (Namaskara)', 
     style: 'Youthful, direct, and very friendly.',
-    fillers: 'à²¹à³à² (hmm), à²®à²¤à³à²¤à³ (well), à²¨à³à²¡à³à²£ (let me see)'
+    fillers: 'ಹೂಂ (hmm), ಮತ್ತೆ (well), ನೋಡೋಣ (let me see)'
   },
   'Sinhala': { 
-    greeting: 'à¶à¶ºà·à¶¶à·à·à¶±à· (Ayubowan)', 
+    greeting: 'ආයුබෝවන් (Ayubowan)', 
     style: 'Sweet, traditional, and helpful.',
-    fillers: 'à¶¸à·à¶¸à· (hmm), à¶à¶­à·à¶±à· (well), à¶¶à¶½à¶¸à· (let me see)'
+    fillers: 'ම්ම් (hmm), ඉතින් (well), බලමු (let me see)'
   },
   'Tagalog': { 
     greeting: 'Kamusta Po', 
@@ -62,9 +62,9 @@ const LANGUAGE_BEHAVIOR: Record<string, { greeting: string, style: string, fille
     fillers: 'hmm, well, let me see'
   },
   'Egyptian': { 
-    greeting: 'Ø£ÙÙØ§Ù Ø¨ÙÙ (Ahlan bik)', 
+    greeting: 'أهلاً بيك (Ahlan bik)', 
     style: 'Lively, friendly, and very helpful modern Egyptian style.',
-    fillers: 'ÙÙÙ (hmm), ÙØ¹ÙÙ (well), Ø£Ø´ÙÙ (let me see)'
+    fillers: 'ممم (hmm), يعني (well), أشوف (let me see)'
   }
 };
 

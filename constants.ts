@@ -3,18 +3,18 @@ import { Agent, LanguageCode, Advisor } from './types';
 import { DETAILED_JOB_DATABASE } from './jobDatabase';
 
 export const AGENTS: Agent[] = [
-  { id: '12', name: 'Alisha', nativeName: 'Alisha', language: 'English', flag: '🇬🇧', langCode: LanguageCode.ENGLISH, voiceName: 'Kore' },
+  { id: '12', name: 'Alisha', nativeName: 'Alisha', language: 'English', flag: '🇬🇧', langCode: LanguageCode.ENGLISH, voiceName: 'Zephyr' },
   { id: '4', name: 'Navya', nativeName: 'नव्या', language: 'Hindi', flag: '🇮🇳', langCode: LanguageCode.HINDI, voiceName: 'Kore' },
-  { id: '6', name: 'Fatima', nativeName: 'فاطمہ', language: 'Urdu', flag: '🇵🇰', langCode: LanguageCode.URDU, voiceName: 'Fenrir' },
+  { id: '6', name: 'Fatima', nativeName: 'فاطمہ', language: 'Urdu', flag: '🇵🇰', langCode: LanguageCode.URDU, voiceName: 'Zephyr' },
   { id: '1', name: 'Kavya', nativeName: 'കാവ്യ', language: 'Malayalam', flag: '🇮🇳', langCode: LanguageCode.MALAYALAM, voiceName: 'Kore' },
-  { id: '9', name: 'Mayumi', nativeName: 'Mayumi', language: 'Tagalog', flag: '🇵🇭', langCode: LanguageCode.TAGALOG, voiceName: 'Puck' },
-  { id: '2', name: 'Anjali', nativeName: 'அஞ்சலி', language: 'Tamil', flag: '🇮🇳', langCode: LanguageCode.TAMIL, voiceName: 'Puck' },
-  { id: '5', name: 'Kinnara', nativeName: 'ಕಿన్నರ', language: 'Kannada', flag: '🇮🇳', langCode: LanguageCode.KANNADA, voiceName: 'Puck' },
+  { id: '9', name: 'Mayumi', nativeName: 'Mayumi', language: 'Tagalog', flag: '🇵🇭', langCode: LanguageCode.TAGALOG, voiceName: 'Zephyr' },
+  { id: '2', name: 'Anjali', nativeName: 'அஞ்சலி', language: 'Tamil', flag: '🇮🇳', langCode: LanguageCode.TAMIL, voiceName: 'Kore' },
+  { id: '5', name: 'Kinnara', nativeName: 'ಕಿన్నರ', language: 'Kannada', flag: '🇮🇳', langCode: LanguageCode.KANNADA, voiceName: 'Zephyr' },
   { id: '3', name: 'Anusha', nativeName: 'అనూష', language: 'Telugu', flag: '🇮🇳', langCode: LanguageCode.TELUGU, voiceName: 'Kore' },
-  { id: '10', name: 'Janani', nativeName: 'ජനනි', language: 'Sinhala', flag: '🇱🇰', langCode: LanguageCode.SINHALA, voiceName: 'Kore' },
+  { id: '10', name: 'Janani', nativeName: 'ජനනි', language: 'Sinhala', flag: '🇱🇰', langCode: LanguageCode.SINHALA, voiceName: 'Zephyr' },
   { id: '7', name: 'Zahra', nativeName: 'زهرة', language: 'Arabic', flag: '🇦🇪', langCode: LanguageCode.ARABIC, voiceName: 'Zephyr' },
   { id: '8', name: 'Farida', nativeName: 'فريدة', language: 'Egyptian', flag: '🇪🇬', langCode: LanguageCode.EGYPTIAN, voiceName: 'Zephyr' },
-  { id: '11', name: 'Zuri', nativeName: 'Zuri', language: 'Kiswahili', flag: '🇰🇪', langCode: LanguageCode.SWAHILI, voiceName: 'Zephyr' },
+  { id: '11', name: 'Zuri', nativeName: 'Zuri', language: 'Kiswahili', flag: '🇰🇪', langCode: LanguageCode.SWAHILI, voiceName: 'Kore' },
 ];
 
 export const ADVISORS: Advisor[] = [

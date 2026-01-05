@@ -17,7 +17,10 @@ import {
   ShieldCheck,
   Globe,
   Keyboard,
-  Mic2
+  Mic2,
+  Loader2,
+  Volume2,
+  AlertCircle
 } from 'lucide-react';
 
 type AppView = 'landing' | 'agent-selection' | 'mode-selection' | 'chat';
@@ -31,15 +34,22 @@ const App: React.FC = () => {
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isLiveVoice, setIsLiveVoice] = useState(false);
+  const [isConnectingVoice, setIsConnectingVoice] = useState(false);
   const [liveTranscript, setLiveTranscript] = useState('');
   const [showBooking, setShowBooking] = useState(false);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
   
   const chatEndRef = useRef<HTMLDivElement>(null);
   const liveSessionRef = useRef<any>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
+  const inputAudioContextRef = useRef<AudioContext | null>(null);
   const nextStartTimeRef = useRef<number>(0);
   const activeSourcesRef = useRef<Set<AudioBufferSourceNode>>(new Set());
   const currentOutputTranscriptionRef = useRef('');
+  const micStreamRef = useRef<MediaStream | null>(null);
+  
+  // Buffering ref to prevent lag in chat
+  const chatBufferRef = useRef<string>('');
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -67,10 +77,17 @@ const App: React.FC = () => {
             const stream = generateChatResponseStream(selectedAgent, [], greetingPrompt);
             
             let fullContent = "";
+            let lastUpdate = Date.now();
+            
             for await (const chunk of stream) {
               fullContent += chunk;
-              setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, content: fullContent } : m));
+              // Throttle UI updates to 60ms to prevent lag
+              if (Date.now() - lastUpdate > 60) {
+                setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, content: fullContent } : m));
+                lastUpdate = Date.now();
+              }
             }
+            setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, content: fullContent } : m));
           } catch (e) {
             console.error("Greeting failed", e);
           } finally {
@@ -85,83 +102,170 @@ const App: React.FC = () => {
   }, [selectedAgent, view, isLiveVoice]);
 
   const startLiveVoice = async () => {
-    if (!selectedAgent) return;
-    setIsLiveVoice(true);
+    if (!selectedAgent || isConnectingVoice) return;
+    setIsConnectingVoice(true);
+    setVoiceError(null);
     setLiveTranscript('');
     currentOutputTranscriptionRef.current = '';
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    const outCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
-    const inCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
-    await outCtx.resume();
-    await inCtx.resume();
-    audioContextRef.current = outCtx;
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    
+    try {
+      const outCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+      const inCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
+      
+      if (outCtx.state === 'suspended') await outCtx.resume();
+      if (inCtx.state === 'suspended') await inCtx.resume();
+      
+      audioContextRef.current = outCtx;
+      inputAudioContextRef.current = inCtx;
 
-    const sessionPromise = ai.live.connect({
-      model: 'gemini-2.5-flash-native-audio-preview-09-2025',
-      callbacks: {
-        onopen: () => {
-          const source = inCtx.createMediaStreamSource(stream);
-          const processor = inCtx.createScriptProcessor(2048, 1, 1);
-          processor.onaudioprocess = (e) => {
-            const inputData = e.inputBuffer.getChannelData(0);
-            const pcmBase64 = encodeAudioPCM(inputData);
-            sessionPromise.then(s => s.sendRealtimeInput({ media: { data: pcmBase64, mimeType: 'audio/pcm;rate=16000' } }));
-          };
-          source.connect(processor);
-          processor.connect(inCtx.destination);
-        },
-        onmessage: async (msg: any) => {
-          if (msg.serverContent?.outputTranscription) {
-            currentOutputTranscriptionRef.current += msg.serverContent.outputTranscription.text;
-            setLiveTranscript(currentOutputTranscriptionRef.current);
-          }
-          if (msg.serverContent?.turnComplete) {
-            if (currentOutputTranscriptionRef.current) {
-               setMessages(prev => [...prev, { id: Date.now().toString(), role: 'assistant', content: currentOutputTranscriptionRef.current, timestamp: new Date() }]);
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      micStreamRef.current = stream;
+
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      
+      const sessionPromise = ai.live.connect({
+        model: 'gemini-2.5-flash-native-audio-preview-09-2025',
+        callbacks: {
+          onopen: () => {
+            console.debug("Live Voice Session Opened");
+            setIsConnectingVoice(false);
+            
+            // Proactive trigger: Send silent buffer to force the model to start its turn (Greeting)
+            sessionPromise.then(s => {
+               const triggerData = new Int16Array(16000).fill(0); // 1s of silence
+               const triggerBase64 = btoa(String.fromCharCode(...new Uint8Array(triggerData.buffer)));
+               s.sendRealtimeInput({ media: { data: triggerBase64, mimeType: 'audio/pcm;rate=16000' } }); 
+            }).catch(err => console.error("Initial trigger failed:", err));
+
+            const source = inCtx.createMediaStreamSource(stream);
+            const processor = inCtx.createScriptProcessor(4096, 1, 1);
+            
+            processor.onaudioprocess = (e) => {
+              const inputData = e.inputBuffer.getChannelData(0);
+              const pcmBase64 = encodeAudioPCM(inputData);
+              sessionPromise.then(s => {
+                if (s) {
+                  s.sendRealtimeInput({ 
+                    media: { data: pcmBase64, mimeType: 'audio/pcm;rate=16000' } 
+                  });
+                }
+              }).catch(() => {});
+            };
+            
+            source.connect(processor);
+            processor.connect(inCtx.destination);
+          },
+          onmessage: async (msg: any) => {
+            if (msg.serverContent?.outputTranscription) {
+              currentOutputTranscriptionRef.current += msg.serverContent.outputTranscription.text;
+              setLiveTranscript(currentOutputTranscriptionRef.current);
             }
-            currentOutputTranscriptionRef.current = '';
-          }
-          const audioBase64 = msg.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
-          if (audioBase64 && audioContextRef.current) {
-            const ctx = audioContextRef.current;
-            nextStartTimeRef.current = Math.max(nextStartTimeRef.current, ctx.currentTime);
-            const audioBuffer = await decodeAudioData(decodeBase64Audio(audioBase64), ctx, 24000, 1);
-            const source = ctx.createBufferSource();
-            source.buffer = audioBuffer;
-            source.connect(ctx.destination);
-            source.start(nextStartTimeRef.current);
-            nextStartTimeRef.current += audioBuffer.duration;
-            activeSourcesRef.current.add(source);
-            source.onended = () => activeSourcesRef.current.delete(source);
-          }
-          if (msg.serverContent?.interrupted) {
-            activeSourcesRef.current.forEach(s => s.stop());
-            activeSourcesRef.current.clear();
-            nextStartTimeRef.current = 0;
-            currentOutputTranscriptionRef.current = '';
-            setLiveTranscript('');
+            
+            if (msg.serverContent?.turnComplete) {
+              if (currentOutputTranscriptionRef.current) {
+                setMessages(prev => [...prev, { 
+                  id: Date.now().toString(), 
+                  role: 'assistant', 
+                  content: currentOutputTranscriptionRef.current, 
+                  timestamp: new Date() 
+                }]);
+              }
+              currentOutputTranscriptionRef.current = '';
+            }
+
+            const parts = msg.serverContent?.modelTurn?.parts;
+            if (parts && Array.isArray(parts)) {
+              for (const part of parts) {
+                if (part.inlineData?.data && audioContextRef.current) {
+                  const ctx = audioContextRef.current;
+                  const audioBase64 = part.inlineData.data;
+                  nextStartTimeRef.current = Math.max(nextStartTimeRef.current, ctx.currentTime);
+                  const audioBuffer = await decodeAudioData(decodeBase64Audio(audioBase64), ctx, 24000, 1);
+                  const source = ctx.createBufferSource();
+                  source.buffer = audioBuffer;
+                  source.connect(ctx.destination);
+                  source.start(nextStartTimeRef.current);
+                  nextStartTimeRef.current += audioBuffer.duration;
+                  activeSourcesRef.current.add(source);
+                  source.onended = () => activeSourcesRef.current.delete(source);
+                }
+              }
+            }
+
+            if (msg.serverContent?.interrupted) {
+              activeSourcesRef.current.forEach(s => { try { s.stop(); } catch(e) {} });
+              activeSourcesRef.current.clear();
+              nextStartTimeRef.current = 0;
+              currentOutputTranscriptionRef.current = '';
+              setLiveTranscript('');
+            }
+          },
+          onclose: (e) => {
+            if (e.code !== 1000) {
+              setVoiceError("Connection lost. Returning to safety.");
+              setTimeout(() => stopLiveVoice(), 2000);
+            }
+          },
+          onerror: (e) => {
+            setVoiceError("Voice service error.");
+            setTimeout(() => stopLiveVoice(), 2000);
           }
         },
-        onclose: () => setIsLiveVoice(false),
-        onerror: () => setIsLiveVoice(false)
-      },
-      config: {
-        responseModalities: [Modality.AUDIO],
-        outputAudioTranscription: {},
-        inputAudioTranscription: {},
-        speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: selectedAgent.voiceName } } },
-        systemInstruction: `You are ${selectedAgent.name}. A young, smart, friendly female advisor. Use human fillers like "hmm". Speak only in ${selectedAgent.language} script. Strictly follow flow: greet/ask Name -> ask Profession -> ask Age -> suggest Job from database.`
-      }
-    });
-    liveSessionRef.current = await sessionPromise;
+        config: {
+          responseModalities: [Modality.AUDIO],
+          outputAudioTranscription: {},
+          inputAudioTranscription: {},
+          speechConfig: { 
+            voiceConfig: { 
+              prebuiltVoiceConfig: { voiceName: selectedAgent.voiceName } 
+            } 
+          },
+          systemInstruction: `You are ${selectedAgent.name}, a friendly female advisor at Better Call Immigration Dubai. 
+          CRITICAL: You MUST speak exclusively in ${selectedAgent.language} using the appropriate native script and phonetics. 
+          PROACTIVE START: Immediately greet the user in ${selectedAgent.language} and say: "Hello, I am ${selectedAgent.name}. I'm here to help you with European job visas. What is your name?"
+          Stay in character as a young, smart professional.
+          Keep responses extremely brief (1-2 short sentences). 
+          Flow: Introduce yourself -> Ask Name -> Ask Profession -> Ask Age -> Suggest jobs.
+          Database: Use the European 16-country knowledge base.
+          Tone: Bright, warm, helpful.`
+        }
+      });
+      
+      liveSessionRef.current = await sessionPromise;
+      
+    } catch (err: any) {
+      console.error("Voice initialization failed:", err);
+      setVoiceError("Could not start voice session.");
+      setIsConnectingVoice(false);
+      setTimeout(() => stopLiveVoice(), 2000);
+    }
   };
 
   const stopLiveVoice = () => {
-    if (liveSessionRef.current) liveSessionRef.current.close();
-    if (audioContextRef.current) audioContextRef.current.close();
+    if (liveSessionRef.current) {
+      try { liveSessionRef.current.close(); } catch(e) {}
+      liveSessionRef.current = null;
+    }
+    activeSourcesRef.current.forEach(s => { try { s.stop(); } catch(e) {} });
+    activeSourcesRef.current.clear();
+    if (micStreamRef.current) {
+      micStreamRef.current.getTracks().forEach(track => track.stop());
+      micStreamRef.current = null;
+    }
+    if (audioContextRef.current) {
+      try { audioContextRef.current.close(); } catch(e) {}
+      audioContextRef.current = null;
+    }
+    if (inputAudioContextRef.current) {
+      try { inputAudioContextRef.current.close(); } catch(e) {}
+      inputAudioContextRef.current = null;
+    }
     setIsLiveVoice(false);
-    setView('landing');
+    setIsConnectingVoice(false);
+    setLiveTranscript('');
+    setVoiceError(null);
+    currentOutputTranscriptionRef.current = '';
+    setView('mode-selection');
     setMessages([]);
   };
 
@@ -173,15 +277,26 @@ const App: React.FC = () => {
     setIsTyping(true);
     const assistantId = (Date.now() + 1).toString();
     setMessages(prev => [...prev, { id: assistantId, role: 'assistant', content: '', timestamp: new Date() }]);
+    
     try {
       const history = messages.map(m => ({ role: m.role, content: m.content }));
       const stream = generateChatResponseStream(selectedAgent, history, trimmed);
       let fullContent = "";
+      let lastUpdate = Date.now();
+
       for await (const chunk of stream) {
         fullContent += chunk;
-        setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, content: fullContent } : m));
+        if (Date.now() - lastUpdate > 80) { // Throttle updates to eliminate lag
+          setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, content: fullContent } : m));
+          lastUpdate = Date.now();
+        }
       }
-    } catch (e) { console.error(e); } finally { setIsTyping(false); }
+      setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, content: fullContent } : m));
+    } catch (e) { 
+      console.error(e); 
+    } finally { 
+      setIsTyping(false); 
+    }
   };
 
   const renderLanding = () => (
@@ -254,7 +369,7 @@ const App: React.FC = () => {
     <div className="flex flex-col h-screen h-[100dvh] bg-[#f8fafc] overflow-hidden">
       <header className="px-6 pt-16 pb-6 flex items-center justify-between bg-white border-b border-slate-100 sticky top-0 z-[100] shrink-0">
         <div className="flex items-center gap-4">
-          <button onClick={() => setView('landing')} className="p-2 -ml-2 text-slate-900 active:scale-90 transition-transform">
+          <button onClick={() => setView('landing')} className="p-2 -ml-2 text-slate-950 active:scale-90 transition-transform">
             <ChevronLeft size={28} />
           </button>
           <div>
@@ -345,7 +460,11 @@ const App: React.FC = () => {
     <div className="flex flex-col h-screen h-[100dvh] bg-white overflow-hidden relative">
       <header className="px-5 pt-16 pb-4 bg-white border-b border-slate-100 flex items-center justify-between sticky top-0 z-[100] shrink-0">
         <div className="flex items-center gap-3">
-          <button onClick={() => { setView('mode-selection'); setMessages([]); }} className="p-2 -ml-2 text-slate-900 active:scale-90 transition-transform">
+          <button onClick={() => { 
+            if (isLiveVoice) stopLiveVoice();
+            setView('mode-selection'); 
+            setMessages([]); 
+          }} className="p-2 -ml-2 text-slate-950 active:scale-90 transition-transform">
             <ChevronLeft size={28} />
           </button>
           <div className="flex items-center gap-3">
@@ -419,36 +538,68 @@ const App: React.FC = () => {
       )}
 
       {isLiveVoice && (
-        <div className="fixed inset-0 z-[1000] bg-slate-950 flex flex-col items-center animate-in slide-in-from-bottom overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-b from-indigo-600/10 via-transparent to-violet-600/10 pointer-events-none"></div>
+        <div className="fixed inset-0 z-[1000] bg-slate-950 flex flex-col items-center animate-in slide-in-from-bottom overflow-hidden h-[100dvh]">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(79,70,229,0.1),transparent_70%)] pointer-events-none"></div>
           
           <div className="flex-1 w-full overflow-y-auto ios-scroll flex flex-col items-center py-16 px-8 space-y-12 min-h-0">
             <div className="text-center relative z-10">
-              <div className="text-7xl mb-8 drop-shadow-2xl">{selectedAgent?.flag}</div>
-              <h2 className="text-3xl font-black uppercase text-white">{selectedAgent?.nativeName}</h2>
-              <div className="inline-flex items-center gap-2 mt-4 px-3 py-1 bg-indigo-500/20 border border-indigo-500/30 rounded-full">
-                <Sparkles size={12} className="text-indigo-400" />
-                <p className="text-indigo-300 font-black uppercase text-[8px] tracking-[0.3em] animate-pulse">Voice Session</p>
+              <div className="text-8xl mb-10 drop-shadow-2xl animate-in zoom-in duration-500">{selectedAgent?.flag}</div>
+              <h2 className="text-3xl font-[900] uppercase text-white tracking-tight mb-4">{selectedAgent?.nativeName}</h2>
+              <div className="inline-flex items-center gap-3 px-5 py-2.5 bg-indigo-500/15 border border-indigo-500/30 rounded-full backdrop-blur-md">
+                {isConnectingVoice ? (
+                   <>
+                     <Loader2 size={16} className="text-indigo-400 animate-spin" />
+                     <p className="text-indigo-300 font-black uppercase text-[10px] tracking-[0.2em]">Connecting Line...</p>
+                   </>
+                ) : (
+                  <>
+                    <div className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                    </div>
+                    <p className="text-indigo-300 font-black uppercase text-[10px] tracking-[0.2em]">Voice Session Active</p>
+                  </>
+                )}
               </div>
             </div>
 
             <div className="w-full flex flex-col items-center gap-10 z-10">
-              <div className="w-36 h-36 bg-indigo-600 rounded-[2.5rem] flex items-center justify-center shadow-[0_0_60px_rgba(79,70,229,0.4)] relative">
-                <div className="absolute inset-[-15%] bg-indigo-600 rounded-full animate-voice opacity-10 scale-125"></div>
-                <Mic size={48} className="text-white relative z-10"/>
+              <div className={`w-48 h-48 bg-indigo-600 rounded-[4rem] flex items-center justify-center shadow-[0_0_80px_rgba(79,70,229,0.4)] relative transition-all duration-700 ${isConnectingVoice ? 'scale-90 opacity-50 blur-sm' : 'scale-100 opacity-100'}`}>
+                {!isConnectingVoice && <div className="absolute inset-[-25%] bg-indigo-600 rounded-full animate-voice opacity-10"></div>}
+                {isConnectingVoice ? <Loader2 size={64} className="text-white animate-spin opacity-50" /> : <Mic size={64} className="text-white relative z-10" />}
               </div>
-              <div className="bg-white/5 border border-white/10 p-6 rounded-[2rem] w-full min-h-[100px] flex items-center justify-center text-center backdrop-blur-3xl">
-                <p className="text-lg font-medium italic text-indigo-100 leading-snug tracking-tight">
-                  {liveTranscript || "Listening..."}
-                </p>
+              
+              <div className="bg-white/[0.03] border border-white/[0.08] p-8 rounded-[3rem] w-full min-h-[160px] flex items-center justify-center text-center backdrop-blur-2xl shadow-inner relative overflow-hidden group">
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-indigo-500/30 to-transparent"></div>
+                <div className="flex flex-col gap-4">
+                   {voiceError ? (
+                     <div className="flex flex-col items-center gap-2 text-red-400 animate-pulse">
+                       <AlertCircle size={24} />
+                       <p className="text-sm font-black uppercase tracking-widest">{voiceError}</p>
+                     </div>
+                   ) : (
+                     <p className="text-xl font-medium italic text-indigo-100 leading-relaxed tracking-tight transition-all duration-300">
+                      {isConnectingVoice ? "Initializing smart advisor..." : (liveTranscript || `Hello, I'm ${selectedAgent?.name}. How can I help?`)}
+                    </p>
+                   )}
+                  {!isConnectingVoice && !liveTranscript && !voiceError && (
+                    <div className="flex items-center justify-center gap-2 opacity-30">
+                       <Volume2 size={12} className="text-indigo-400" />
+                       <span className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-300">Ready for audio</span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-            <div className="h-20 shrink-0" />
+            <div className="h-40 shrink-0" />
           </div>
 
-          <div className="w-full px-8 pb-16 pt-6 flex justify-center bg-gradient-to-t from-slate-950 to-transparent shrink-0">
-            <button onClick={stopLiveVoice} className="w-20 h-20 bg-red-600 text-white rounded-[2.5rem] flex items-center justify-center shadow-2xl active:scale-90 transition-all z-[1100]">
-              <PhoneCall size={32} />
+          <div className="w-full px-8 pb-16 pt-8 flex justify-center bg-gradient-to-t from-slate-950 via-slate-950 to-transparent shrink-0">
+            <button 
+              onClick={stopLiveVoice} 
+              className="w-24 h-24 bg-red-600 text-white rounded-[3rem] flex items-center justify-center shadow-[0_0_50px_rgba(220,38,38,0.5)] active:scale-90 hover:scale-105 transition-all z-[1100] border-[6px] border-slate-950 group"
+            >
+              <PhoneCall size={38} fill="white" className="group-hover:rotate-12 transition-transform" />
             </button>
           </div>
         </div>

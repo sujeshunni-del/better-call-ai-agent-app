@@ -56,3 +56,13 @@ export interface JobData {
   paymentTerms: string;
   ageLimit: string;
 }
+
+export interface LeadData {
+  name: string;
+  age: string;
+  profession: string;
+  phone: string;
+  email: string;
+  desiredCountry: string;
+  nationality: string;
+}

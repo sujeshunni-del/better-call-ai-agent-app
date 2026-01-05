@@ -8,16 +8,36 @@ export const AGENTS: Agent[] = [
   { id: '6', name: 'Fatima', nativeName: 'فاطمہ', language: 'Urdu', flag: '🇵🇰', langCode: LanguageCode.URDU, voiceName: 'Zephyr' },
   { id: '1', name: 'Kavya', nativeName: 'കാവ്യ', language: 'Malayalam', flag: '🇮🇳', langCode: LanguageCode.MALAYALAM, voiceName: 'Kore' },
   { id: '9', name: 'Mayumi', nativeName: 'Mayumi', language: 'Tagalog', flag: '🇵🇭', langCode: LanguageCode.TAGALOG, voiceName: 'Zephyr' },
-  { id: '2', name: 'Anjali', nativeName: 'அஞ்சலி', language: 'Tamil', flag: '🇮🇳', langCode: LanguageCode.TAMIL, voiceName: 'Kore' },
+  { id: '2', name: 'Anjali', nativeName: 'அஞ்சലി', language: 'Tamil', flag: '🇮🇳', langCode: LanguageCode.TAMIL, voiceName: 'Kore' },
   { id: '5', name: 'Kinnara', nativeName: 'ಕಿన్నರ', language: 'Kannada', flag: '🇮🇳', langCode: LanguageCode.KANNADA, voiceName: 'Zephyr' },
   { id: '3', name: 'Anusha', nativeName: 'అనూష', language: 'Telugu', flag: '🇮🇳', langCode: LanguageCode.TELUGU, voiceName: 'Kore' },
-  { id: '10', name: 'Janani', nativeName: 'ජനනි', language: 'Sinhala', flag: '🇱🇰', langCode: LanguageCode.SINHALA, voiceName: 'Zephyr' },
+  { id: '10', name: 'Janani', nativeName: 'ජනනි', language: 'Sinhala', flag: '🇱🇰', langCode: LanguageCode.SINHALA, voiceName: 'Zephyr' },
   { id: '7', name: 'Zahra', nativeName: 'زهرة', language: 'Arabic', flag: '🇦🇪', langCode: LanguageCode.ARABIC, voiceName: 'Zephyr' },
   { id: '8', name: 'Farida', nativeName: 'فريدة', language: 'Egyptian', flag: '🇪🇬', langCode: LanguageCode.EGYPTIAN, voiceName: 'Zephyr' },
   { id: '11', name: 'Zuri', nativeName: 'Zuri', language: 'Kiswahili', flag: '🇰🇪', langCode: LanguageCode.SWAHILI, voiceName: 'Kore' },
 ];
 
 export const ADVISORS: Advisor[] = [
+  {
+    id: 'benitta',
+    name: 'Benitta',
+    initials: 'BN',
+    calApiKey: 'cal_live_1ac079710d9a52668ea733b71fe287bf',
+    meetSlug: 'google-meet',
+    officeSlug: '30min',
+    languages: ['Malayalam', 'English'],
+    phone: '+971 56 955 3355'
+  },
+  {
+    id: 'eunice',
+    name: 'Eunice',
+    initials: 'EU',
+    calApiKey: 'cal_live_9489b42b4b6e4cdb8c144e8150fa62c9',
+    meetSlug: '30min',
+    officeSlug: 'direct-face-to-face',
+    languages: ['English', 'Swahili'],
+    phone: '+971 54 263 2323'
+  },
   {
     id: 'sagar',
     name: 'Sagar',
@@ -37,26 +57,6 @@ export const ADVISORS: Advisor[] = [
     officeSlug: '30min',
     languages: ['Malayalam', 'English', 'Tamil', 'Hindi'],
     phone: '+971 56 132 2255'
-  },
-  {
-    id: 'eunice',
-    name: 'Eunice',
-    initials: 'EU',
-    calApiKey: 'cal_live_9489b42b4b6e4cdb8c144e8150fa62c9',
-    meetSlug: '30min',
-    officeSlug: 'direct-face-to-face',
-    languages: ['English', 'Swahili'],
-    phone: '+971 54 263 2323'
-  },
-  {
-    id: 'benitta',
-    name: 'Benitta',
-    initials: 'BN',
-    calApiKey: 'cal_live_1ac079710d9a52668ea733b71fe287bf',
-    meetSlug: 'google-meet',
-    officeSlug: '30min',
-    languages: ['Malayalam', 'English'],
-    phone: '+971 56 955 3355'
   }
 ];
 
@@ -91,9 +91,10 @@ NON-SCHENGEN: Albania, Belarus, Macedonia, Montenegro, Serbia, Slovakia.
 
 ADVISOR PROTOCOL:
 - PERSONA: Young, smart, friendly female advisor.
-- FLOW: Greet -> Name -> Profession -> Age -> Tier Suggestion.
-- REJECTION: If asked for USA/UK/Canada, say: "Hmm, we specialize specifically in 16 European and Non-Schengen countries. Let's find your best fit among these."
-- BREVITY: Max 2 sentences. Use fillers like "hmm", "well", "let's see".
+- FLOW: Greet -> Name -> Nationality -> Age -> Profession -> Phone -> Email -> Desired Country.
+- REJECTION: If asked for USA/UK/Canada, say: "I apologize, but we specialize exclusively in 16 European countries. Let's find your best fit there."
+- BREVITY: Max 2 sentences. No verbal fillers.
+- IMPORTANT: When opening the form, do NOT say "sending a link". Say "Opening the profile verification form on your screen now".
 
 ${DETAILED_JOB_DATABASE}
 `;

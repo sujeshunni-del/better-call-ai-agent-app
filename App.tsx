@@ -1,10 +1,11 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { AGENTS, COMPANY_INFO } from './constants';
-import { Agent, Message } from './types';
-import { generateChatResponseStream, encodeAudioPCM, decodeAudioData, decodeBase64Audio } from './services/geminiService';
+import { AGENTS, COMPANY_INFO, KNOWLEDGE_BASE } from './constants';
+import { Agent, Message, LeadData } from './types';
+import { generateChatResponseStream, encodeAudioPCM, decodeAudioData, decodeBase64Audio, leadCaptureTool } from './services/geminiService';
 import { GoogleGenAI, Modality } from '@google/genai';
 import BookingForm from './components/BookingForm';
+import LeadForm from './components/LeadForm';
 import { 
   Send, 
   Mic, 
@@ -20,7 +21,10 @@ import {
   Mic2,
   Loader2,
   Volume2,
-  AlertCircle
+  AlertCircle,
+  User,
+  Headphones,
+  PhoneOff
 } from 'lucide-react';
 
 type AppView = 'landing' | 'agent-selection' | 'mode-selection' | 'chat';
@@ -38,6 +42,7 @@ const App: React.FC = () => {
   const [liveTranscript, setLiveTranscript] = useState('');
   const [showBooking, setShowBooking] = useState(false);
   const [voiceError, setVoiceError] = useState<string | null>(null);
+  const [leadFormData, setLeadFormData] = useState<Partial<LeadData> | null>(null);
   
   const chatEndRef = useRef<HTMLDivElement>(null);
   const liveSessionRef = useRef<any>(null);
@@ -48,9 +53,6 @@ const App: React.FC = () => {
   const currentOutputTranscriptionRef = useRef('');
   const micStreamRef = useRef<MediaStream | null>(null);
   
-  // Buffering ref to prevent lag in chat
-  const chatBufferRef = useRef<string>('');
-
   useEffect(() => {
     const timer = setTimeout(() => {
       chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -73,18 +75,19 @@ const App: React.FC = () => {
           setMessages([assistantMsg]);
 
           try {
-            const greetingPrompt = "Act naturally as a smart young female advisor. Use a human filler like hmm, then greet me warmly in your native script and ask for my name first. Keep it very brief.";
+            const greetingPrompt = `Act as ${selectedAgent.name}. Introduce yourself from Better Call Immigration. Greet warmly in ${selectedAgent.language} and ask for my NAME first. Do not mention links.`;
             const stream = generateChatResponseStream(selectedAgent, [], greetingPrompt);
             
             let fullContent = "";
             let lastUpdate = Date.now();
             
             for await (const chunk of stream) {
-              fullContent += chunk;
-              // Throttle UI updates to 60ms to prevent lag
-              if (Date.now() - lastUpdate > 60) {
-                setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, content: fullContent } : m));
-                lastUpdate = Date.now();
+              if (chunk.type === 'text') {
+                fullContent += chunk.content;
+                if (Date.now() - lastUpdate > 60) {
+                  setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, content: fullContent } : m));
+                  lastUpdate = Date.now();
+                }
               }
             }
             setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, content: fullContent } : m));
@@ -127,18 +130,16 @@ const App: React.FC = () => {
         model: 'gemini-2.5-flash-native-audio-preview-09-2025',
         callbacks: {
           onopen: () => {
-            console.debug("Live Voice Session Opened");
             setIsConnectingVoice(false);
             
-            // Proactive trigger: Send silent buffer to force the model to start its turn (Greeting)
             sessionPromise.then(s => {
-               const triggerData = new Int16Array(16000).fill(0); // 1s of silence
+               const triggerData = new Int16Array(1600).fill(0); // Shorter trigger
                const triggerBase64 = btoa(String.fromCharCode(...new Uint8Array(triggerData.buffer)));
                s.sendRealtimeInput({ media: { data: triggerBase64, mimeType: 'audio/pcm;rate=16000' } }); 
             }).catch(err => console.error("Initial trigger failed:", err));
 
             const source = inCtx.createMediaStreamSource(stream);
-            const processor = inCtx.createScriptProcessor(4096, 1, 1);
+            const processor = inCtx.createScriptProcessor(2048, 1, 1); // Lower buffer for less lag
             
             processor.onaudioprocess = (e) => {
               const inputData = e.inputBuffer.getChannelData(0);
@@ -156,6 +157,16 @@ const App: React.FC = () => {
             processor.connect(inCtx.destination);
           },
           onmessage: async (msg: any) => {
+            if (msg.toolCall) {
+              for (const fc of msg.toolCall.functionCalls) {
+                if (fc.name === 'openLeadForm') {
+                  setLeadFormData(fc.args);
+                  sessionPromise.then(s => s.sendToolResponse({
+                    functionResponses: { id: fc.id, name: fc.name, response: { result: "Verification form displayed to user." } }
+                  }));
+                }
+              }
+            }
             if (msg.serverContent?.outputTranscription) {
               currentOutputTranscriptionRef.current += msg.serverContent.outputTranscription.text;
               setLiveTranscript(currentOutputTranscriptionRef.current);
@@ -202,12 +213,12 @@ const App: React.FC = () => {
           },
           onclose: (e) => {
             if (e.code !== 1000) {
-              setVoiceError("Connection lost. Returning to safety.");
+              setVoiceError("Connection closed.");
               setTimeout(() => stopLiveVoice(), 2000);
             }
           },
           onerror: (e) => {
-            setVoiceError("Voice service error.");
+            setVoiceError("Voice system error.");
             setTimeout(() => stopLiveVoice(), 2000);
           }
         },
@@ -215,27 +226,30 @@ const App: React.FC = () => {
           responseModalities: [Modality.AUDIO],
           outputAudioTranscription: {},
           inputAudioTranscription: {},
+          tools: [{ functionDeclarations: [leadCaptureTool] }],
           speechConfig: { 
             voiceConfig: { 
               prebuiltVoiceConfig: { voiceName: selectedAgent.voiceName } 
             } 
           },
-          systemInstruction: `You are ${selectedAgent.name}, a friendly female advisor at Better Call Immigration Dubai. 
-          CRITICAL: You MUST speak exclusively in ${selectedAgent.language} using the appropriate native script and phonetics. 
-          PROACTIVE START: Immediately greet the user in ${selectedAgent.language} and say: "Hello, I am ${selectedAgent.name}. I'm here to help you with European job visas. What is your name?"
-          Stay in character as a young, smart professional.
-          Keep responses extremely brief (1-2 short sentences). 
-          Flow: Introduce yourself -> Ask Name -> Ask Profession -> Ask Age -> Suggest jobs.
-          Database: Use the European 16-country knowledge base.
-          Tone: Bright, warm, helpful.`
+          systemInstruction: `
+            You are ${selectedAgent.name}, a warm smart advisor at Better Call Immigration Dubai.
+            Speak ONLY in ${selectedAgent.language}.
+
+            STRICT VOICE FLOW:
+            1. Introduce yourself and ask for NAME.
+            2. Step-by-step gather details (Nationality, Age, Profession, Phone, Email).
+            3. SPECIAL: Never say "sending a link". Say "Opening the profile form for you now".
+            4. Keep responses extremely brief (1-2 sentences).
+            5. Use database: ${KNOWLEDGE_BASE}.
+          `
         }
       });
       
       liveSessionRef.current = await sessionPromise;
       
     } catch (err: any) {
-      console.error("Voice initialization failed:", err);
-      setVoiceError("Could not start voice session.");
+      setVoiceError("Failed to connect.");
       setIsConnectingVoice(false);
       setTimeout(() => stopLiveVoice(), 2000);
     }
@@ -285,10 +299,14 @@ const App: React.FC = () => {
       let lastUpdate = Date.now();
 
       for await (const chunk of stream) {
-        fullContent += chunk;
-        if (Date.now() - lastUpdate > 80) { // Throttle updates to eliminate lag
-          setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, content: fullContent } : m));
-          lastUpdate = Date.now();
+        if (chunk.type === 'text') {
+          fullContent += chunk.content;
+          if (Date.now() - lastUpdate > 80) { 
+            setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, content: fullContent } : m));
+            lastUpdate = Date.now();
+          }
+        } else if (chunk.type === 'tool' && chunk.name === 'openLeadForm') {
+          setLeadFormData(chunk.args);
         }
       }
       setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, content: fullContent } : m));
@@ -386,15 +404,14 @@ const App: React.FC = () => {
             <button
               key={agent.id}
               onClick={() => { setSelectedAgent(agent); setView('mode-selection'); }}
-              className="group flex flex-col items-center gap-3 p-5 bg-white rounded-[2rem] border border-slate-100 shadow-sm hover:border-indigo-200 active:scale-95 transition-all text-center"
+              className="group flex items-center gap-3 p-4 bg-white rounded-3xl border border-slate-100 shadow-sm hover:border-indigo-600 hover:shadow-lg active:scale-[0.96] transition-all text-left"
             >
-              <div className="relative shrink-0">
-                <div className="text-4xl drop-shadow-sm group-hover:scale-110 transition-transform">{agent.flag}</div>
-                <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
+              <div className="w-11 h-11 flex items-center justify-center text-2xl bg-slate-50 rounded-2xl group-hover:scale-110 transition-transform shrink-0 shadow-inner">
+                {agent.flag}
               </div>
-              <div className="min-w-0 w-full">
-                <h3 className="text-[12px] font-black text-slate-900 tracking-tight leading-none mb-1 truncate">{agent.nativeName}</h3>
-                <p className="text-[8px] font-black uppercase text-slate-400 tracking-widest truncate">{agent.language}</p>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-[12px] font-black text-slate-900 tracking-tight leading-none mb-1 uppercase truncate">{agent.nativeName}</h3>
+                <p className="text-[8px] font-black uppercase text-indigo-600 tracking-widest truncate opacity-60">{agent.language}</p>
               </div>
             </button>
           ))}
@@ -407,58 +424,62 @@ const App: React.FC = () => {
     <div className="flex flex-col h-screen h-[100dvh] bg-[#fdfdff] font-jakarta px-6 overflow-hidden">
       <div className="flex-1 flex flex-col justify-center items-center">
         <div className="text-center mb-10">
-          <div className="text-6xl mb-6">{selectedAgent?.flag}</div>
-          <h2 className="text-2xl font-black text-slate-900 tracking-tight uppercase mb-2">Connect with {selectedAgent?.nativeName}</h2>
-          <p className="text-[9px] font-black uppercase text-slate-400 tracking-[0.3em]">Communication Mode</p>
+          <div className="text-7xl mb-6 animate-bounce duration-1000">{selectedAgent?.flag}</div>
+          <h2 className="text-3xl font-black text-slate-900 tracking-tight uppercase mb-2">Connect with {selectedAgent?.nativeName}</h2>
+          <p className="text-[10px] font-black uppercase text-slate-400 tracking-[0.4em]">Choose your preference</p>
         </div>
 
-        <div className="w-full max-w-xs space-y-4">
+        <div className="w-full max-w-sm space-y-4">
           <button 
             onClick={() => { setIsLiveVoice(false); setView('chat'); }}
-            className="w-full flex items-center justify-between p-5 bg-white border-2 border-slate-100 rounded-[2rem] shadow-sm hover:border-indigo-600 active:scale-95 transition-all text-left"
+            className="group w-full flex items-center justify-between p-6 bg-white border-2 border-slate-100 rounded-[2.5rem] shadow-sm hover:border-indigo-600 hover:shadow-xl active:scale-95 transition-all text-left"
           >
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
-                <Keyboard size={20} />
+            <div className="flex items-center gap-5">
+              <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors shadow-inner">
+                <Keyboard size={24} />
               </div>
               <div>
-                <p className="text-sm font-black text-slate-900 uppercase tracking-tight">Text Chat</p>
-                <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Type messages</p>
+                <p className="text-base font-black text-slate-900 uppercase tracking-tight">Text Chat</p>
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Instant Messaging</p>
               </div>
             </div>
-            <ArrowRight className="text-slate-200" size={18} />
+            <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-indigo-50 group-hover:translate-x-1 transition-all">
+              <ArrowRight className="text-slate-400 group-hover:text-indigo-600" size={18} />
+            </div>
           </button>
 
           <button 
             onClick={() => { setIsLiveVoice(true); setView('chat'); }}
-            className="w-full flex items-center justify-between p-5 bg-white border-2 border-slate-100 rounded-[2rem] shadow-sm hover:border-indigo-600 active:scale-95 transition-all text-left"
+            className="group w-full flex items-center justify-between p-6 bg-white border-2 border-slate-100 rounded-[2.5rem] shadow-sm hover:border-indigo-600 hover:shadow-xl active:scale-95 transition-all text-left"
           >
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 bg-violet-50 rounded-xl flex items-center justify-center text-violet-600">
-                <Mic2 size={20} />
+            <div className="flex items-center gap-5">
+              <div className="w-12 h-12 bg-violet-50 rounded-2xl flex items-center justify-center text-violet-600 group-hover:bg-violet-600 group-hover:text-white transition-colors shadow-inner">
+                <Mic2 size={24} />
               </div>
               <div>
-                <p className="text-sm font-black text-slate-900 uppercase tracking-tight">Live Voice</p>
-                <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Speak real-time</p>
+                <p className="text-base font-black text-slate-900 uppercase tracking-tight">Live Voice</p>
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Real-time Audio</p>
               </div>
             </div>
-            <ArrowRight className="text-slate-200" size={18} />
+            <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-violet-50 group-hover:translate-x-1 transition-all">
+              <ArrowRight className="text-slate-400 group-hover:text-violet-600" size={18} />
+            </div>
           </button>
         </div>
       </div>
 
       <button 
         onClick={() => setView('agent-selection')}
-        className="mb-12 text-[9px] font-black uppercase text-slate-400 tracking-[0.4em] flex items-center gap-2 hover:text-indigo-600 transition-colors self-center"
+        className="mb-12 text-[10px] font-black uppercase text-slate-400 tracking-[0.4em] flex items-center gap-2 hover:text-indigo-600 transition-colors self-center bg-white px-6 py-3 rounded-full border border-slate-100 shadow-sm"
       >
-        <ChevronLeft size={14} /> Back
+        <ChevronLeft size={16} /> Back to agents
       </button>
     </div>
   );
 
   const renderChat = () => (
     <div className="flex flex-col h-screen h-[100dvh] bg-white overflow-hidden relative">
-      <header className="px-5 pt-16 pb-4 bg-white border-b border-slate-100 flex items-center justify-between sticky top-0 z-[100] shrink-0">
+      <header className="px-5 pt-16 pb-5 bg-white border-b border-slate-100 flex items-center justify-between sticky top-0 z-[100] shrink-0">
         <div className="flex items-center gap-3">
           <button onClick={() => { 
             if (isLiveVoice) stopLiveVoice();
@@ -470,34 +491,40 @@ const App: React.FC = () => {
           <div className="flex items-center gap-3">
             <div className="text-2xl drop-shadow-sm">{selectedAgent?.flag}</div>
             <div>
-              <h1 className="text-base font-black text-slate-900 tracking-tight leading-none">{selectedAgent?.nativeName}</h1>
-              <div className="flex items-center gap-1.5 mt-1">
-                <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
-                <p className="text-[8px] text-slate-400 font-black uppercase tracking-widest">Active</p>
+              <h1 className="text-[15px] font-black text-slate-900 tracking-tight leading-none">{selectedAgent?.nativeName}</h1>
+              <div className="flex items-center gap-1.5 mt-1.5">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
+                <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest">Online Advisor</p>
               </div>
             </div>
           </div>
         </div>
         <button 
           onClick={() => setShowBooking(true)} 
-          className="p-3 bg-indigo-600 text-white rounded-xl active:scale-90 transition-all"
+          className="p-3.5 bg-indigo-600 text-white rounded-2xl active:scale-90 hover:bg-indigo-700 transition-all shadow-lg vibrant-shadow"
         >
           <Calendar size={18} />
         </button>
       </header>
 
-      <main className="flex-1 overflow-y-auto px-5 py-6 space-y-6 ios-scroll bg-slate-50/30 min-h-0">
+      <main className="flex-1 overflow-y-auto px-5 py-8 space-y-6 ios-scroll bg-[#fbfbfe] min-h-0">
         {messages.map((msg) => (
-          <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-in slide-in-from-bottom-2`}>
-            <div className={`max-w-[85%] p-4 rounded-[1.75rem] ${
-              msg.role === 'user' 
-                ? 'bg-gradient-to-br from-indigo-600 to-violet-700 text-white rounded-tr-none shadow-lg' 
-                : 'bg-white text-slate-900 rounded-tl-none border border-slate-100 shadow-sm'
-            }`}>
-              <div className="text-[14.5px] leading-relaxed tracking-tight font-medium">
-                {msg.content || (isTyping && msg.id === 'greeting-id' ? "Connecting..." : "")}
+          <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-in slide-in-from-bottom-3`}>
+            {msg.role === 'assistant' && (
+              <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center mr-2 self-end mb-1 shrink-0 border border-slate-200">
+                <span className="text-sm">{selectedAgent?.flag}</span>
               </div>
-              <div className={`text-[8px] mt-2 opacity-50 font-black uppercase tracking-widest ${msg.role === 'user' ? 'text-right' : 'text-left'}`}>
+            )}
+            <div className={`max-w-[80%] p-4 rounded-3xl ${
+              msg.role === 'user' 
+                ? 'bg-gradient-to-br from-indigo-600 to-violet-700 text-white rounded-tr-none shadow-xl vibrant-shadow shadow-indigo-600/20' 
+                : 'bg-white text-slate-900 rounded-tl-none border border-slate-100 shadow-md'
+            }`}>
+              <div className="text-[15px] leading-relaxed tracking-tight font-medium">
+                {msg.content || (isTyping && msg.id === 'greeting-id' ? "Starting chat..." : "")}
+              </div>
+              <div className={`text-[9px] mt-2.5 opacity-40 font-black uppercase tracking-widest flex items-center gap-1.5 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                {msg.role === 'user' ? <User size={8}/> : <Headphones size={8}/>}
                 {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </div>
             </div>
@@ -505,10 +532,13 @@ const App: React.FC = () => {
         ))}
         {isTyping && !isLiveVoice && messages[messages.length-1]?.role !== 'assistant' && (
           <div className="flex justify-start">
-            <div className="bg-white border border-slate-100 p-4 rounded-[1.75rem] rounded-tl-none flex gap-1.5 shadow-sm">
-              <div className="w-1.5 h-1.5 bg-indigo-300 rounded-full animate-bounce"></div>
-              <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce [animation-delay:0.2s]"></div>
-              <div className="w-1.5 h-1.5 bg-indigo-700 rounded-full animate-bounce [animation-delay:0.4s]"></div>
+            <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center mr-2 self-end mb-1 shrink-0">
+               <span className="text-sm">{selectedAgent?.flag}</span>
+            </div>
+            <div className="bg-white border border-slate-100 p-5 rounded-3xl rounded-tl-none flex gap-2 shadow-sm">
+              <div className="w-2 h-2 bg-indigo-300 rounded-full animate-bounce"></div>
+              <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce [animation-delay:0.2s]"></div>
+              <div className="w-2 h-2 bg-indigo-700 rounded-full animate-bounce [animation-delay:0.4s]"></div>
             </div>
           </div>
         )}
@@ -516,94 +546,120 @@ const App: React.FC = () => {
       </main>
 
       {!isLiveVoice && (
-        <footer className="px-5 pt-4 pb-12 bg-white/80 backdrop-blur-md border-t border-slate-100 safe-bottom shrink-0 z-10">
-          <div className="bg-slate-50 rounded-[1.75rem] p-2 flex items-center border border-slate-200 focus-within:bg-white focus-within:shadow-xl transition-all max-w-lg mx-auto">
+        <footer className="px-5 pt-4 pb-12 bg-white/95 backdrop-blur-xl border-t border-slate-100 safe-bottom shrink-0 z-10">
+          <div className="bg-[#f0f2f5] rounded-[2rem] p-2 flex items-center border border-slate-200 focus-within:bg-white focus-within:ring-2 focus-within:ring-indigo-100 focus-within:shadow-2xl transition-all max-w-xl mx-auto shadow-inner">
             <textarea
               rows={1}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-              placeholder={`Type message...`}
-              className="flex-1 bg-transparent border-none outline-none px-4 py-3 text-slate-800 font-bold placeholder-slate-400 text-sm max-h-24 resize-none"
+              placeholder={`Ask ${selectedAgent?.name} anything...`}
+              className="flex-1 bg-transparent border-none outline-none px-5 py-3.5 text-slate-800 font-semibold placeholder-slate-400 text-[15px] max-h-32 resize-none"
             />
             <button 
               onClick={() => handleSend()}
               disabled={!input.trim()}
-              className="w-12 h-12 bg-indigo-600 text-white rounded-2xl flex items-center justify-center disabled:opacity-20 active:scale-95 transition-all shadow-md shrink-0"
+              className="w-14 h-14 bg-indigo-600 text-white rounded-full flex items-center justify-center disabled:opacity-20 active:scale-90 hover:bg-indigo-700 transition-all shadow-lg shrink-0 vibrant-shadow"
             >
-              <Send size={20} />
+              <Send size={22} className="ml-1" />
             </button>
           </div>
         </footer>
       )}
 
       {isLiveVoice && (
-        <div className="fixed inset-0 z-[1000] bg-slate-950 flex flex-col items-center animate-in slide-in-from-bottom overflow-hidden h-[100dvh]">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(79,70,229,0.1),transparent_70%)] pointer-events-none"></div>
+        <div className="fixed inset-0 z-[1000] bg-slate-950 flex flex-col items-center animate-in slide-in-from-bottom duration-500 overflow-hidden h-[100dvh]">
+          {/* Animated Background Layers */}
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_40%,rgba(79,70,229,0.12),transparent_60%)] pointer-events-none"></div>
           
-          <div className="flex-1 w-full overflow-y-auto ios-scroll flex flex-col items-center py-16 px-8 space-y-12 min-h-0">
-            <div className="text-center relative z-10">
-              <div className="text-8xl mb-10 drop-shadow-2xl animate-in zoom-in duration-500">{selectedAgent?.flag}</div>
-              <h2 className="text-3xl font-[900] uppercase text-white tracking-tight mb-4">{selectedAgent?.nativeName}</h2>
-              <div className="inline-flex items-center gap-3 px-5 py-2.5 bg-indigo-500/15 border border-indigo-500/30 rounded-full backdrop-blur-md">
-                {isConnectingVoice ? (
-                   <>
-                     <Loader2 size={16} className="text-indigo-400 animate-spin" />
-                     <p className="text-indigo-300 font-black uppercase text-[10px] tracking-[0.2em]">Connecting Line...</p>
-                   </>
-                ) : (
-                  <>
-                    <div className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                    </div>
-                    <p className="text-indigo-300 font-black uppercase text-[10px] tracking-[0.2em]">Voice Session Active</p>
-                  </>
-                )}
+          <div className="flex-1 w-full overflow-y-auto ios-scroll flex flex-col items-center pt-12 px-6 space-y-8 min-h-0 relative z-10">
+            {/* Header Area */}
+            <div className="text-center">
+              <div className="relative inline-block mb-4">
+                <div className="absolute inset-0 bg-indigo-500/10 blur-[40px] rounded-full animate-pulse"></div>
+                <div className="text-[70px] drop-shadow-[0_10px_30px_rgba(79,70,229,0.4)] animate-in zoom-in-50 duration-700">{selectedAgent?.flag}</div>
+              </div>
+              <h2 className="text-2xl font-[900] uppercase text-white tracking-tighter mb-2">{selectedAgent?.nativeName}</h2>
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-full backdrop-blur-xl">
+                <div className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+                </div>
+                <p className="text-indigo-300 font-black uppercase text-[9px] tracking-[0.2em]">Live Database Connection</p>
               </div>
             </div>
 
-            <div className="w-full flex flex-col items-center gap-10 z-10">
-              <div className={`w-48 h-48 bg-indigo-600 rounded-[4rem] flex items-center justify-center shadow-[0_0_80px_rgba(79,70,229,0.4)] relative transition-all duration-700 ${isConnectingVoice ? 'scale-90 opacity-50 blur-sm' : 'scale-100 opacity-100'}`}>
-                {!isConnectingVoice && <div className="absolute inset-[-25%] bg-indigo-600 rounded-full animate-voice opacity-10"></div>}
-                {isConnectingVoice ? <Loader2 size={64} className="text-white animate-spin opacity-50" /> : <Mic size={64} className="text-white relative z-10" />}
-              </div>
-              
-              <div className="bg-white/[0.03] border border-white/[0.08] p-8 rounded-[3rem] w-full min-h-[160px] flex items-center justify-center text-center backdrop-blur-2xl shadow-inner relative overflow-hidden group">
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-indigo-500/30 to-transparent"></div>
-                <div className="flex flex-col gap-4">
-                   {voiceError ? (
-                     <div className="flex flex-col items-center gap-2 text-red-400 animate-pulse">
-                       <AlertCircle size={24} />
-                       <p className="text-sm font-black uppercase tracking-widest">{voiceError}</p>
-                     </div>
-                   ) : (
-                     <p className="text-xl font-medium italic text-indigo-100 leading-relaxed tracking-tight transition-all duration-300">
-                      {isConnectingVoice ? "Initializing smart advisor..." : (liveTranscript || `Hello, I'm ${selectedAgent?.name}. How can I help?`)}
-                    </p>
-                   )}
-                  {!isConnectingVoice && !liveTranscript && !voiceError && (
-                    <div className="flex items-center justify-center gap-2 opacity-30">
-                       <Volume2 size={12} className="text-indigo-400" />
-                       <span className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-300">Ready for audio</span>
+            {/* Central Visualizer Area */}
+            <div className="w-full flex flex-col items-center gap-6 relative max-w-md">
+              <div className={`relative w-32 h-32 transition-all duration-700 flex items-center justify-center ${isConnectingVoice ? 'scale-75 opacity-40 blur-md' : 'scale-100 opacity-100'}`}>
+                <div className="w-full h-full bg-gradient-to-br from-indigo-600 to-violet-700 rounded-[2.5rem] flex items-center justify-center shadow-[0_0_60px_rgba(79,70,229,0.3)] border border-white/5 relative z-20">
+                  {isConnectingVoice ? (
+                    <Loader2 size={40} className="text-white animate-spin opacity-40" />
+                  ) : (
+                    <div className="flex items-end gap-1 h-10">
+                      {[1,2,3,4,5].map(i => (
+                        <div key={i} className={`w-1 rounded-full bg-white/90 animate-voice-bar`} style={{ height: `${20 + Math.random() * 80}%`, animationDelay: `${i * 0.1}s` }}></div>
+                      ))}
                     </div>
                   )}
                 </div>
               </div>
+              
+              {/* Transcript Display */}
+              <div className="w-full bg-white/5 border border-white/10 p-5 rounded-[2rem] min-h-[120px] flex flex-col items-center justify-center text-center backdrop-blur-3xl shadow-2xl relative overflow-hidden transition-all duration-500 border-b-white/15">
+                {voiceError ? (
+                  <div className="flex flex-col items-center gap-2 text-red-400">
+                    <AlertCircle size={20} className="animate-bounce" />
+                    <p className="text-[9px] font-black uppercase tracking-[0.1em]">{voiceError}</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <p className={`text-lg font-bold text-white leading-tight tracking-tight ${!liveTranscript ? 'italic text-white/30 font-medium' : ''}`}>
+                      {isConnectingVoice ? "Initializing smart advisor..." : (liveTranscript || `Say "Hello" to start...`)}
+                    </p>
+                    {liveTranscript && !isConnectingVoice && (
+                      <span className="text-[8px] font-black uppercase text-indigo-400 tracking-[0.2em] animate-pulse">Syncing...</span>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="h-40 shrink-0" />
+            <div className="h-10 shrink-0" />
           </div>
 
-          <div className="w-full px-8 pb-16 pt-8 flex justify-center bg-gradient-to-t from-slate-950 via-slate-950 to-transparent shrink-0">
+          {/* End Call Button Area */}
+          <div className="w-full px-8 pb-10 pt-4 flex flex-col items-center gap-4 bg-slate-950/80 shrink-0 relative z-[1100] safe-bottom">
             <button 
               onClick={stopLiveVoice} 
-              className="w-24 h-24 bg-red-600 text-white rounded-[3rem] flex items-center justify-center shadow-[0_0_50px_rgba(220,38,38,0.5)] active:scale-90 hover:scale-105 transition-all z-[1100] border-[6px] border-slate-950 group"
+              className="group relative w-16 h-16 bg-red-600 text-white rounded-[2rem] flex items-center justify-center shadow-[0_0_40px_rgba(220,38,38,0.2)] active:scale-90 transition-all border-[4px] border-slate-950"
             >
-              <PhoneCall size={38} fill="white" className="group-hover:rotate-12 transition-transform" />
+              <PhoneOff size={24} />
             </button>
+            <p className="text-[8px] font-black uppercase tracking-[0.3em] text-white/30">Close Consultation</p>
           </div>
         </div>
       )}
+      
+      {leadFormData && (
+        <LeadForm 
+          initialData={leadFormData} 
+          onClose={() => setLeadFormData(null)} 
+          onSuccess={() => {
+            setLeadFormData(null);
+            setMessages(prev => [...prev, { id: Date.now().toString(), role: 'assistant', content: "Confirmed! Your profile is submitted. Our expert human advisor will call you shortly.", timestamp: new Date() }]);
+          }} 
+        />
+      )}
+
+      <style>{`
+        @keyframes voice-bar {
+          0%, 100% { height: 20%; }
+          50% { height: 100%; }
+        }
+        .animate-voice-bar {
+          animation: voice-bar 0.6s infinite ease-in-out;
+        }
+      `}</style>
     </div>
   );
 

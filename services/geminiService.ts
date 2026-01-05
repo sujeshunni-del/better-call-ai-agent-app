@@ -1,70 +1,76 @@
 
-import { GoogleGenAI, Modality } from "@google/genai";
+import { GoogleGenAI, Modality, Type, FunctionDeclaration } from "@google/genai";
 import { COMPANY_INFO, KNOWLEDGE_BASE } from "../constants";
-import { Agent } from "../types";
+import { Agent, LeadData } from "../types";
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-const LANGUAGE_BEHAVIOR: Record<string, { greeting: string, style: string, fillers: string }> = {
+const LANGUAGE_BEHAVIOR: Record<string, { greeting: string, style: string }> = {
   'Malayalam': { 
     greeting: 'നമസ്കാരം (Namaskaram)', 
-    style: 'Warm, youthful, and professional Keralite hospitality.',
-    fillers: 'മ്മ് (hmm), പിന്നെ (well), നോക്കട്ടെ (let me see)'
+    style: 'Warm, youthful, and professional Keralite hospitality.'
   },
   'Tamil': { 
-    greeting: 'வணக்கம் (Vanakkam)', 
-    style: 'Bright, cheerful, and smart South Indian vibe.',
-    fillers: 'ம்ம் (hmm), சரி (well), பாக்கலாம் (let me see)'
+    greeting: 'வணക്കം (Vanakkam)', 
+    style: 'Bright, cheerful, and smart South Indian vibe.'
   },
   'Arabic': { 
     greeting: 'السلام عليكم (Assalam Alaikum)', 
-    style: 'Modern, generous, and welcoming Middle-Eastern style.',
-    fillers: 'ممم (hmm), طيب (well), أشوف (let me see)'
+    style: 'Modern, generous, and welcoming Middle-Eastern style.'
   },
   'Urdu': { 
     greeting: 'السلام علیکم (Assalam Alaikum)', 
-    style: 'Polite, sweet, and helpful with a youthful touch.',
-    fillers: 'ہوں (hmm), تو (well), دیکھنے دیں (let me see)'
+    style: 'Polite, sweet, and helpful with a youthful touch.'
   },
   'Hindi': { 
     greeting: 'नमस्ते (Namaste)', 
-    style: 'Friendly, modern, and energetic North Indian style.',
-    fillers: 'हम्म (hmm), तो (well), देखते हैं (let me see)'
+    style: 'Friendly, modern, and energetic North Indian style.'
   },
   'Telugu': { 
     greeting: 'నమస్కారం (Namaskaram)', 
-    style: 'Smart, polite, and welcoming.',
-    fillers: 'మ్మ్ (hmm), సరే (well), చూద్దాం (let me see)'
+    style: 'Smart, polite, and welcoming.'
   },
   'Kannada': { 
-    greeting: 'ನಮಸ್ಕಾರ (Namaskara)', 
-    style: 'Youthful, direct, and very friendly.',
-    fillers: 'ಹೂಂ (hmm), ಮತ್ತೆ (well), ನೋಡೋಣ (let me see)'
+    greeting: 'ನമസ്ಕಾರ (Namaskara)', 
+    style: 'Youthful, direct, and very friendly.'
   },
   'Sinhala': { 
     greeting: 'ආයුබෝවන් (Ayubowan)', 
-    style: 'Sweet, traditional, and helpful.',
-    fillers: 'ම්ම් (hmm), ඉතින් (well), බලමු (let me see)'
+    style: 'Sweet, traditional, and helpful.'
   },
   'Tagalog': { 
     greeting: 'Kamusta Po', 
-    style: 'Cheerful, bubbly, and very smart.',
-    fillers: 'hmm, so (well), tingnan natin (let me see)'
+    style: 'Cheerful, bubbly, and very smart.'
   },
   'Kiswahili': { 
     greeting: 'Jambo / Habari', 
-    style: 'Warm, lively, and energetic African vibe.',
-    fillers: 'hmm, sawa (well), ngoja nione (let me see)'
+    style: 'Warm, lively, and energetic African vibe.'
   },
   'English': { 
     greeting: 'Hi there!', 
-    style: 'Smart, modern, professional, and very friendly.',
-    fillers: 'hmm, well, let me see'
+    style: 'Smart, modern, professional, and very friendly.'
   },
   'Egyptian': { 
     greeting: 'أهلاً بيك (Ahlan bik)', 
-    style: 'Lively, friendly, and very helpful modern Egyptian style.',
-    fillers: 'ممم (hmm), يعني (well), أشوف (let me see)'
+    style: 'Lively, friendly, and very helpful modern Egyptian style.'
+  }
+};
+
+export const leadCaptureTool: FunctionDeclaration = {
+  name: 'openLeadForm',
+  parameters: {
+    type: Type.OBJECT,
+    description: 'Triggers the lead confirmation form to submit ALL gathered details to a human advisor.',
+    properties: {
+      name: { type: Type.STRING, description: 'User full name' },
+      age: { type: Type.STRING, description: 'User age' },
+      profession: { type: Type.STRING, description: 'Current profession' },
+      phone: { type: Type.STRING, description: 'Mobile phone number with country code' },
+      email: { type: Type.STRING, description: 'Email address' },
+      nationality: { type: Type.STRING, description: 'User nationality' },
+      desiredCountry: { type: Type.STRING, description: 'The country interested in from our 16 options' }
+    },
+    required: ['name', 'profession', 'phone', 'email']
   }
 };
 
@@ -73,27 +79,24 @@ export async function* generateChatResponseStream(agent: Agent, history: {role: 
   
   const systemInstruction = `
     PERSONA:
-    You are ${agent.name}, a YOUNG, SMART, and FRIENDLY FEMALE Immigration Advisor at "${COMPANY_INFO.name}" in Dubai. 
-    You speak ONLY in ${agent.language} and use the native script provided: ${agent.nativeName}.
+    You are ${agent.name}, a YOUNG, SMART, and VERY FRIENDLY female Immigration Advisor at "${COMPANY_INFO.name}" in Dubai. 
+    You speak ONLY in ${agent.language}.
+
+    STRICT DATA GATHERING FLOW:
+    Collect: Name -> Nationality -> Age -> Profession -> Mobile Phone -> Email -> Desired Country.
+    Ask ONE question at a time.
     
-    STRICT FOCUS:
-    - We ONLY deal with 16 specific countries (Schengen & Non-Schengen).
-    - If user asks for USA, UK, Canada, Australia, etc., say: "Hmm, we only specialize in visas for 16 specific European and Non-Schengen countries currently."
+    IMPORTANT: 
+    - Never say "I am sending a link". 
+    - Say "I am opening the verification form on your screen" or "Please verify your details on the form appearing now".
+    - ONLY call 'openLeadForm' tool if the user confirms they want to speak with a human advisor or after gathering all data.
+
+    DATABASE:
+    - Specialist in 16 European/Non-Schengen countries only.
+    - No USA/UK/Canada support.
     
-    HUMAN TOUCH:
-    - Occasionally use human fillers: ${behavior.fillers}.
-    - Be warm, supportive, and efficient.
+    TONE: Professional, smart, very short (max 2 sentences).
     
-    CONVERSATIONAL FLOW (MANDATORY):
-    1. Greet with "${behavior.greeting}" and ask for their NAME first.
-    2. Once you have the name, ask for their PROFESSION.
-    3. Once you have the profession, ask for their AGE.
-    4. AFTER getting all 3 details, analyze the database and suggest a specific COUNTRY and JOB.
-    
-    LIMITS:
-    - KEEP RESPONSES UNDER 2 SENTENCES. BE BRIEF.
-    
-    KNOWLEDGE BASE:
     ${KNOWLEDGE_BASE}
   `;
 
@@ -107,67 +110,21 @@ export async function* generateChatResponseStream(agent: Agent, history: {role: 
     contents: contents as any,
     config: {
       systemInstruction,
-      temperature: 0.9,
+      temperature: 0.1,
+      tools: [{ functionDeclarations: [leadCaptureTool] }]
     },
   });
 
   for await (const chunk of response) {
     if (chunk.text) {
-      yield chunk.text;
+      yield { type: 'text', content: chunk.text };
+    }
+    if (chunk.functionCalls) {
+      for (const fc of chunk.functionCalls) {
+        yield { type: 'tool', name: fc.name, args: fc.args };
+      }
     }
   }
-}
-
-export async function generateChatResponse(agent: Agent, history: {role: string, content: string}[], message: string) {
-  const stream = generateChatResponseStream(agent, history, message);
-  let fullText = "";
-  for await (const text of stream) {
-    fullText += text;
-  }
-  return fullText;
-}
-
-export async function generateSpeech(text: string, voiceName: string): Promise<string | null> {
-  try {
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash-preview-tts",
-      contents: [{ parts: [{ text }] }],
-      config: {
-        responseModalities: [Modality.AUDIO],
-        speechConfig: {
-          voiceConfig: {
-            prebuiltVoiceConfig: { voiceName },
-          },
-        },
-      },
-    });
-
-    const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-    return base64Audio || null;
-  } catch (error) {
-    console.error("Speech generation error:", error);
-    return null;
-  }
-}
-
-export async function playAudio(base64: string) {
-  const bytes = decodeBase64Audio(base64);
-  const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
-  const audioBuffer = await decodeAudioData(bytes, audioContext, 24000, 1);
-  const source = audioContext.createBufferSource();
-  source.buffer = audioBuffer;
-  source.connect(audioContext.destination);
-  source.start();
-}
-
-export function decodeBase64Audio(base64: string): Uint8Array {
-  const binaryString = atob(base64);
-  const len = binaryString.length;
-  const bytes = new Uint8Array(len);
-  for (let i = 0; i < len; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
-  }
-  return bytes;
 }
 
 export async function decodeAudioData(
@@ -201,4 +158,14 @@ export function encodeAudioPCM(data: Float32Array): string {
     binary += String.fromCharCode(bytes[i]);
   }
   return btoa(binary);
+}
+
+export function decodeBase64Audio(base64: string): Uint8Array {
+  const binaryString = atob(base64);
+  const len = binaryString.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes;
 }

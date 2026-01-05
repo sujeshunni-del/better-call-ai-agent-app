@@ -3,45 +3,45 @@ import { GoogleGenAI, Modality, Type, FunctionDeclaration } from "@google/genai"
 import { COMPANY_INFO, KNOWLEDGE_BASE } from "../constants";
 import { Agent, LeadData } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || 'FAKE_API_KEY_FOR_DEVELOPMENT' });
 
 const LANGUAGE_BEHAVIOR: Record<string, { greeting: string, style: string, nationality?: string }> = {
   'Malayalam': { 
-    greeting: 'നമസ്കാരം (Namaskaram)', 
+    greeting: 'à´¨à´®à´¸àµà´à´¾à´°à´ (Namaskaram)', 
     style: 'Warm, youthful, and professional Keralite hospitality.',
     nationality: 'India'
   },
   'Tamil': { 
-    greeting: 'வணக்கம் (Vanakkam)', 
+    greeting: 'à®µà®£à®à¯à®à®®à¯ (Vanakkam)', 
     style: 'Bright, cheerful, and smart South Indian vibe.',
     nationality: 'India'
   },
   'Arabic': { 
-    greeting: 'السلام عليكم (Assalam Alaikum)', 
+    greeting: 'Ø§ÙØ³ÙØ§Ù Ø¹ÙÙÙÙ (Assalam Alaikum)', 
     style: 'Modern, generous, and welcoming Middle-Eastern style.'
   },
   'Urdu': { 
-    greeting: 'السلام علیکم (Assalam Alaikum)', 
+    greeting: 'Ø§ÙØ³ÙØ§Ù Ø¹ÙÛÚ©Ù (Assalam Alaikum)', 
     style: 'Polite, sweet, and helpful with a youthful touch.',
     nationality: 'Pakistan'
   },
   'Hindi': { 
-    greeting: 'नमस्ते (Namaste)', 
+    greeting: 'à¤¨à¤®à¤¸à¥à¤¤à¥ (Namaste)', 
     style: 'Friendly, modern, and energetic North Indian style.',
     nationality: 'India'
   },
   'Telugu': { 
-    greeting: 'నమస్కారం (Namaskaram)', 
+    greeting: 'à°¨à°®à°¸à±à°à°¾à°°à° (Namaskaram)', 
     style: 'Smart, polite, and welcoming.',
     nationality: 'India'
   },
   'Kannada': { 
-    greeting: 'ನಮಸ್ಕಾರ (Namaskara)', 
+    greeting: 'à²¨à²®à²¸à³à²à²¾à²° (Namaskara)', 
     style: 'Youthful, direct, and very friendly.',
     nationality: 'India'
   },
   'Sinhala': { 
-    greeting: 'ආයුබෝවන් (Ayubowan)', 
+    greeting: 'à¶à¶ºà·à¶¶à·à·à¶±à· (Ayubowan)', 
     style: 'Sweet, traditional, and helpful.',
     nationality: 'Sri Lanka'
   },
@@ -59,7 +59,7 @@ const LANGUAGE_BEHAVIOR: Record<string, { greeting: string, style: string, natio
     style: 'Smart, modern, professional, and very friendly.'
   },
   'Egyptian': { 
-    greeting: 'أهلاً بيك (Ahlan bik)', 
+    greeting: 'Ø£ÙÙØ§Ù Ø¨ÙÙ (Ahlan bik)', 
     style: 'Lively, friendly, and very helpful modern Egyptian style.',
     nationality: 'Egypt'
   }

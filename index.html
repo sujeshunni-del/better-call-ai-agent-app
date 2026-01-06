@@ -12,10 +12,12 @@
   <style>
     :root {
       --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+      --primary-emerald: #075e54;
+      --secondary-teal: #128c7e;
     }
     body {
       font-family: 'Plus Jakarta Sans', sans-serif;
-      background-color: #f8fafc;
+      background-color: #fdfdff;
       -webkit-tap-highlight-color: transparent;
       overscroll-behavior-y: contain;
       overflow-x: hidden;
@@ -30,10 +32,10 @@
       border: 1px solid rgba(255, 255, 255, 0.3);
     }
     .vibrant-shadow {
-      box-shadow: 0 20px 40px -15px rgba(79, 70, 229, 0.2);
+      box-shadow: 0 20px 40px -15px rgba(7, 94, 84, 0.15);
     }
     .vibrant-shadow-lg {
-      box-shadow: 0 25px 50px -12px rgba(79, 70, 229, 0.4);
+      box-shadow: 0 25px 50px -12px rgba(7, 94, 84, 0.3);
     }
     .custom-scrollbar::-webkit-scrollbar {
       display: none;
@@ -53,7 +55,7 @@
       animation: pulse-custom 2s infinite ease-in-out;
     }
     .gradient-text {
-      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+      background: linear-gradient(135deg, var(--primary-emerald) 0%, var(--secondary-teal) 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }

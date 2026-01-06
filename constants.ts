@@ -8,10 +8,10 @@ export const AGENTS: Agent[] = [
   { id: '6', name: 'Fatima', nativeName: 'فاطمہ', language: 'Urdu', flag: '🇵🇰', langCode: LanguageCode.URDU, voiceName: 'Zephyr' },
   { id: '1', name: 'Kavya', nativeName: 'കാവ്യ', language: 'Malayalam', flag: '🇮🇳', langCode: LanguageCode.MALAYALAM, voiceName: 'Kore' },
   { id: '9', name: 'Mayumi', nativeName: 'Mayumi', language: 'Tagalog', flag: '🇵🇭', langCode: LanguageCode.TAGALOG, voiceName: 'Zephyr' },
-  { id: '2', name: 'Anjali', nativeName: 'அஞ்சലി', language: 'Tamil', flag: '🇮🇳', langCode: LanguageCode.TAMIL, voiceName: 'Kore' },
+  { id: '2', name: 'Anjali', nativeName: 'அஞ்சலி', language: 'Tamil', flag: '🇮🇳', langCode: LanguageCode.TAMIL, voiceName: 'Kore' },
   { id: '5', name: 'Kinnara', nativeName: 'ಕಿన్నರ', language: 'Kannada', flag: '🇮🇳', langCode: LanguageCode.KANNADA, voiceName: 'Zephyr' },
   { id: '3', name: 'Anusha', nativeName: 'అనూష', language: 'Telugu', flag: '🇮🇳', langCode: LanguageCode.TELUGU, voiceName: 'Kore' },
-  { id: '10', name: 'Janani', nativeName: 'ජනනි', language: 'Sinhala', flag: '🇱🇰', langCode: LanguageCode.SINHALA, voiceName: 'Zephyr' },
+  { id: '10', name: 'Janani', nativeName: 'ජനനി', language: 'Sinhala', flag: '🇱🇰', langCode: LanguageCode.SINHALA, voiceName: 'Zephyr' },
   { id: '7', name: 'Zahra', nativeName: 'زهرة', language: 'Arabic', flag: '🇦🇪', langCode: LanguageCode.ARABIC, voiceName: 'Zephyr' },
   { id: '8', name: 'Farida', nativeName: 'فريدة', language: 'Egyptian', flag: '🇪🇬', langCode: LanguageCode.EGYPTIAN, voiceName: 'Zephyr' },
   { id: '11', name: 'Zuri', nativeName: 'Zuri', language: 'Kiswahili', flag: '🇰🇪', langCode: LanguageCode.SWAHILI, voiceName: 'Kore' },
@@ -61,8 +61,19 @@ export const ADVISORS: Advisor[] = [
 ];
 
 export const NATIONALITIES = [
-  "INDIA", "PAKISTAN", "NEPAL", "BANGLADESH", "SRI LANKA", "PHILIPPINES", "AFRICAN COUNTRIES"
+  "PAKISTAN", "SRI LANKA", "NEPAL", "BANGLADESH", "PHILIPPINES", "AFRICA", "EGYPT", "INDIA"
 ];
+
+export const COUNTRY_CODES: Record<string, string> = {
+  "PAKISTAN": "+92",
+  "SRI LANKA": "+94",
+  "NEPAL": "+977",
+  "BANGLADESH": "+880",
+  "PHILIPPINES": "+63",
+  "EGYPT": "+20",
+  "INDIA": "+91",
+  "AFRICA": "+"
+};
 
 export const COMPANY_INFO = {
   name: "Better Call Immigration",
@@ -88,13 +99,6 @@ NON-SCHENGEN: Albania, Belarus, Macedonia, Montenegro, Serbia, Slovakia.
 2. Tier 2 (Western Powerhouses): Germany, Netherlands, Italy, France. Industrial engines.
 3. Tier 3 (Smart Gateway): Poland, Czechia, Slovakia, Croatia, Latvia. High visa success, affordable.
 4. Tier 4 (Budget Starter): Serbia, Belarus, Albania, Montenegro, Macedonia. Fast entry, easier docs.
-
-ADVISOR PROTOCOL:
-- PERSONA: Young, smart, friendly female advisor.
-- FLOW: Greet -> Name -> Nationality -> Age -> Profession -> Phone -> Email -> Desired Country.
-- REJECTION: If asked for USA/UK/Canada, say: "I apologize, but we specialize exclusively in 16 European countries. Let's find your best fit there."
-- BREVITY: Max 2 sentences. No verbal fillers.
-- IMPORTANT: When opening the form, do NOT say "sending a link". Say "Opening the profile verification form on your screen now".
 
 ${DETAILED_JOB_DATABASE}
 `;

@@ -68,7 +68,6 @@ const BookingForm: React.FC<BookingFormProps> = ({ onClose }) => {
     }).format(date);
   }, [formData.date]);
 
-  // Step 1 & 2 transition: Resolve Event Type ID from Cal.com
   useEffect(() => {
     const resolveEventType = async () => {
       if (!currentAdvisor || !formData.mode) return;
@@ -76,14 +75,14 @@ const BookingForm: React.FC<BookingFormProps> = ({ onClose }) => {
       try {
         setSlotsLoading(true);
         const res = await fetch(`https://api.cal.com/v1/event-types?apiKey=${currentAdvisor.calApiKey}`);
-        if (!res.ok) throw new Error("Could not connect to booking server.");
+        if (!res.ok) throw new Error("Connection failed.");
         const data = await res.json();
         const eventTypes = data.event_types || [];
         const match = eventTypes.find((et: any) => et.slug === slug) || eventTypes[0];
         if (match) {
           setResolvedEventTypeId(match.id);
         } else {
-          throw new Error("Service unavailable for this advisor.");
+          throw new Error("Advisor offline.");
         }
       } catch (e: any) {
         setError(e.message);
@@ -115,7 +114,7 @@ const BookingForm: React.FC<BookingFormProps> = ({ onClose }) => {
         timeZone: "Asia/Dubai"
       });
       const response = await fetch(`https://api.cal.com/v1/slots?${params.toString()}`, { signal: abortControllerRef.current.signal });
-      if (!response.ok) throw new Error(`Slot fetch failed: ${response.status}`);
+      if (!response.ok) throw new Error(`Fetch failed.`);
       const data = await response.json();
       
       let slots: any[] = [];
@@ -130,7 +129,7 @@ const BookingForm: React.FC<BookingFormProps> = ({ onClose }) => {
       setAvailableSlots(slots.map((s: any) => ({ time: s.time })));
     } catch (err: any) {
       if (err.name === 'AbortError') return;
-      setError(`No slots found for this date.`);
+      setError(`No slots for today.`);
     } finally {
       setSlotsLoading(false);
     }
@@ -145,7 +144,7 @@ const BookingForm: React.FC<BookingFormProps> = ({ onClose }) => {
 
   const handleBook = async () => {
     if (!formData.name || !formData.email || !formData.phone || !formData.time || !resolvedEventTypeId || !formData.nationality) {
-        setError("Complete all fields to verify.");
+        setError("Fill all fields.");
         return;
     }
     setLoading(true);
@@ -159,7 +158,6 @@ const BookingForm: React.FC<BookingFormProps> = ({ onClose }) => {
           start: formData.time,
           language: 'en',
           timeZone: "Asia/Dubai",
-          description: `Nationality: ${formData.nationality}\nPhone: ${formData.phone}\nMode: ${formData.mode}`,
           responses: { 
             name: formData.name, 
             email: formData.email,
@@ -168,17 +166,13 @@ const BookingForm: React.FC<BookingFormProps> = ({ onClose }) => {
               optionValue: formData.mode === 'Google Meet' ? '' : COMPANY_INFO.address
             }
           },
-          metadata: {
-            phone: formData.phone,
-            nationality: formData.nationality
-          }
+          metadata: { phone: formData.phone, nationality: formData.nationality }
         })
       });
       if (res.ok) {
         setIsSuccess(true);
       } else {
-        const errData = await res.json();
-        throw new Error(errData.message || "Failed to book slot.");
+        throw new Error("Booking failed.");
       }
     } catch (e: any) {
       setError(e.message);
@@ -195,79 +189,49 @@ const BookingForm: React.FC<BookingFormProps> = ({ onClose }) => {
     return days;
   }, [viewDate]);
 
-  const nextStep = () => setStep(prev => prev + 1);
-  const prevStep = () => setStep(prev => prev - 1);
-
   if (isSuccess) return (
     <div className="fixed inset-0 z-[2000] bg-white flex flex-col items-center justify-center p-8 text-center animate-in zoom-in duration-300 font-jakarta h-[100dvh]">
-      <div className="w-20 h-20 bg-green-500 text-white rounded-[2rem] flex items-center justify-center shadow-2xl mb-6 vibrant-shadow">
-        <CalendarCheck size={40}/>
+      <div className="w-16 h-16 bg-[#075e54] text-white rounded-2xl flex items-center justify-center shadow-xl mb-4">
+        <CalendarCheck size={32}/>
       </div>
-      <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight mb-2">Confirmed!</h2>
-      <p className="text-slate-500 text-sm font-medium mb-8 max-w-xs leading-relaxed">Your consultation with {currentAdvisor?.name} has been scheduled successfully.</p>
-      
-      <div className="w-full max-w-xs bg-slate-50 border border-slate-100 rounded-[1.5rem] p-5 mb-8 text-left shadow-sm">
-        <div className="space-y-3">
-          <div>
-            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Date</p>
-            <p className="font-bold text-slate-900 text-sm">{formattedSelectedDate}</p>
-          </div>
-          <div>
-            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Time (GST)</p>
-            <p className="font-bold text-slate-900 text-sm">{new Date(formData.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}</p>
-          </div>
-        </div>
-      </div>
-
-      <button onClick={onClose} className="w-full max-w-[180px] py-4 bg-slate-900 text-white rounded-[1.25rem] font-black uppercase tracking-widest text-[9px] active:scale-95 transition-all shadow-xl">
-        Done
-      </button>
+      <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight mb-2">Confirmed!</h2>
+      <p className="text-slate-500 text-xs font-medium mb-6 max-w-xs leading-relaxed">Consultation scheduled with {currentAdvisor?.name}.</p>
+      <button onClick={onClose} className="w-full max-w-[140px] py-3 bg-slate-900 text-white rounded-xl font-black uppercase tracking-widest text-[8px] active:scale-95 transition-all shadow-lg">Done</button>
     </div>
   );
 
+  const inputClass = "w-full p-3 bg-white border border-slate-200 rounded-xl font-bold text-xs text-slate-900 placeholder:text-slate-400 outline-none focus:border-[#075e54] transition-all shadow-sm";
+
   return (
     <div className="fixed inset-0 z-[2000] bg-white flex flex-col animate-in slide-in-from-bottom duration-500 overflow-hidden font-jakarta h-[100dvh]">
-      <header className="px-5 pt-12 pb-3 flex items-center justify-between border-b border-slate-100 bg-white z-50 shrink-0">
-        <button onClick={onClose} className="p-2 -ml-2 text-slate-950 active:scale-90">
-          <X size={24}/>
-        </button>
+      <header className="px-4 pt-8 pb-3 flex items-center justify-between border-b border-slate-100 bg-white z-50 shrink-0">
+        <button onClick={onClose} className="p-1.5 text-slate-950 active:scale-90"><X size={20}/></button>
         <div className="flex flex-col items-center flex-1">
-           <div className="flex gap-1 mb-1.5">
+           <div className="flex gap-1 mb-1">
               {[1,2,3,4].map(i => (
-                <div key={i} className={`h-1 rounded-full transition-all duration-500 ${i === step ? 'w-5 bg-indigo-600' : i < step ? 'w-1.5 bg-indigo-200' : 'w-1.5 bg-slate-100'}`}></div>
+                <div key={i} className={`h-0.5 rounded-full transition-all duration-500 ${i === step ? 'w-4 bg-[#075e54]' : 'w-1 bg-slate-100'}`}></div>
               ))}
            </div>
-           <p className="text-[7px] font-black uppercase text-slate-400 tracking-[0.3em]">{["Expert", "Mode", "Time", "Details"][step-1]}</p>
+           <p className="text-[6px] font-black uppercase text-slate-400 tracking-[0.2em]">Step {step}/4</p>
         </div>
         <div className="w-8"></div>
       </header>
 
-      <main className="flex-1 overflow-y-auto px-5 py-5 space-y-6 bg-[#fdfdff] ios-scroll min-h-0">
-        {error && (
-          <div className="p-3 bg-red-50 text-red-600 text-[9px] font-black uppercase tracking-widest flex items-center gap-2 rounded-xl border border-red-100 animate-in shake">
-            <AlertCircle size={14} className="shrink-0" /> 
-            <span>{error}</span>
-          </div>
-        )}
+      <main className="flex-1 overflow-y-auto px-4 py-4 space-y-4 bg-[#fdfdff] ios-scroll min-h-0">
+        {error && <div className="p-2 bg-red-50 text-red-600 text-[8px] font-black uppercase flex items-center gap-2 rounded-lg border border-red-100">{error}</div>}
 
         {step === 1 && (
-          <div className="animate-in fade-in slide-in-from-right-4 pb-20">
-             <h3 className="text-xl font-black text-slate-900 uppercase mb-5 text-center">Select Consultant</h3>
-             <div className="grid grid-cols-1 gap-3">
+          <div className="animate-in fade-in slide-in-from-right-2">
+             <h3 className="text-sm font-black text-slate-900 uppercase mb-3 text-center">Consultant</h3>
+             <div className="grid grid-cols-1 gap-2">
                 {ADVISORS.map(a => (
-                  <button 
-                    key={a.id} 
-                    onClick={() => { setFormData({...formData, advisorId: a.id}); setStep(2); }} 
-                    className="flex items-center gap-4 p-4 rounded-[1.5rem] border border-slate-200 bg-white hover:border-indigo-600 active:scale-[0.98] transition-all group shadow-sm"
-                  >
-                    <div className="w-12 h-12 rounded-xl bg-slate-950 text-white flex items-center justify-center font-black text-base group-hover:bg-indigo-600 transition-colors">
-                      {a.initials}
-                    </div>
+                  <button key={a.id} onClick={() => { setFormData({...formData, advisorId: a.id}); setStep(2); }} className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 bg-white active:scale-[0.98] transition-all group shadow-sm">
+                    <div className="w-10 h-10 rounded-lg bg-[#075e54] text-white flex items-center justify-center font-black text-sm shadow-sm">{a.initials}</div>
                     <div className="flex-1 text-left">
-                      <h4 className="font-black uppercase text-xs text-slate-900 mb-0.5">{a.name}</h4>
-                      <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest">{a.languages.join(' • ')}</p>
+                      <h4 className="font-black uppercase text-[10px] text-slate-900 mb-0.5">{a.name}</h4>
+                      <p className="text-[6px] font-black text-slate-400 uppercase tracking-widest truncate">{a.languages.join(' • ')}</p>
                     </div>
-                    <ChevronRight size={18} className="text-slate-200" />
+                    <ChevronRight size={14} className="text-slate-200" />
                   </button>
                 ))}
              </div>
@@ -275,145 +239,86 @@ const BookingForm: React.FC<BookingFormProps> = ({ onClose }) => {
         )}
 
         {step === 2 && (
-          <div className="animate-in fade-in slide-in-from-right-4 pb-20">
-             <h3 className="text-xl font-black text-slate-900 uppercase mb-5 text-center">Consultation Mode</h3>
-             <div className="space-y-3">
+          <div className="animate-in fade-in slide-in-from-right-2">
+             <h3 className="text-sm font-black text-slate-900 uppercase mb-3 text-center">Mode</h3>
+             <div className="space-y-2">
                 {[
-                  { m: 'Google Meet', i: Video, desc: 'Online Video Call' },
-                  { m: 'In-person Office', i: MapPin, desc: 'Dubai Office Visit' }
+                  { m: 'Google Meet', i: Video, desc: 'Online' },
+                  { m: 'In-person Office', i: MapPin, desc: 'Dubai Office' }
                 ].map((item) => (
-                  <button key={item.m} onClick={() => { setFormData({...formData, mode: item.m as ConsultationMode}); setStep(3); }} className="w-full flex items-center gap-4 p-4 rounded-[1.5rem] border border-slate-200 bg-white hover:border-indigo-600 active:scale-[0.98] transition-all text-left group shadow-sm">
-                    <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-slate-50 text-slate-900 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors"><item.i size={24}/></div>
+                  <button key={item.m} onClick={() => { setFormData({...formData, mode: item.m as ConsultationMode}); setStep(3); }} className="w-full flex items-center gap-3 p-3 rounded-xl border border-slate-200 bg-white active:scale-[0.98] transition-all text-left group shadow-sm">
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-emerald-50 text-[#075e54] group-hover:bg-[#075e54] group-hover:text-white transition-all"><item.i size={20}/></div>
                     <div className="flex-1">
-                      <p className="font-black uppercase text-xs text-slate-900">{item.m}</p>
-                      <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{item.desc}</p>
+                      <p className="font-black uppercase text-[10px] text-slate-900">{item.m}</p>
+                      <p className="text-[6px] font-bold text-slate-400 uppercase tracking-widest">{item.desc}</p>
                     </div>
-                    <ChevronRight size={16} className="text-slate-200" />
+                    <ChevronRight size={14} className="text-slate-200" />
                   </button>
                 ))}
              </div>
-             <button onClick={prevStep} className="mt-8 w-full text-[9px] font-black uppercase text-slate-400 tracking-[0.3em] flex items-center justify-center gap-2">
-                <ChevronLeft size={14}/> Back
-             </button>
+             <button onClick={() => setStep(1)} className="mt-6 w-full text-[7px] font-black uppercase text-slate-400 tracking-[0.2em] flex items-center justify-center gap-1 active:text-[#075e54] transition-colors"><ChevronLeft size={10}/> Back</button>
           </div>
         )}
 
         {step === 3 && (
-          <div className="animate-in fade-in slide-in-from-right-4 pb-24">
-             <h3 className="text-xl font-black text-slate-900 uppercase mb-5 text-center">Pick a Date & Time</h3>
-             
-             <div className="bg-slate-900 rounded-[2rem] p-5 text-white mb-6 shadow-xl">
-                <div className="flex justify-between items-center mb-4">
-                  <p className="font-black uppercase text-[11px] tracking-widest text-indigo-300">{viewDate.toLocaleString('default', { month: 'long', year: 'numeric' })}</p>
-                  <div className="flex gap-1">
-                    <button onClick={() => setViewDate(new Date(viewDate.setMonth(viewDate.getMonth()-1)))} className="p-1.5 bg-white/10 rounded-lg hover:bg-white/20 transition-colors"><ChevronLeft size={16}/></button>
-                    <button onClick={() => setViewDate(new Date(viewDate.setMonth(viewDate.getMonth()+1)))} className="p-1.5 bg-white/10 rounded-lg hover:bg-white/20 transition-colors"><ChevronRight size={16}/></button>
+          <div className="animate-in fade-in slide-in-from-right-2 pb-10">
+             <h3 className="text-sm font-black text-slate-900 uppercase mb-3 text-center">Schedule</h3>
+             <div className="bg-slate-900 rounded-2xl p-4 text-white mb-4 shadow-lg scale-95 origin-top">
+                <div className="flex justify-between items-center mb-3">
+                  <p className="font-black uppercase text-[9px] tracking-widest text-emerald-400">{viewDate.toLocaleString('default', { month: 'short', year: 'numeric' })}</p>
+                  <div className="flex gap-0.5">
+                    <button onClick={() => setViewDate(new Date(viewDate.setMonth(viewDate.getMonth()-1)))} className="p-1 hover:bg-white/10 rounded"><ChevronLeft size={14}/></button>
+                    <button onClick={() => setViewDate(new Date(viewDate.setMonth(viewDate.getMonth()+1)))} className="p-1 hover:bg-white/10 rounded"><ChevronRight size={14}/></button>
                   </div>
-                </div>
-                <div className="grid grid-cols-7 gap-2 text-center mb-2">
-                  {['S','M','T','W','T','F','S'].map(d => <span key={d} className="text-[9px] font-black text-slate-500 uppercase">{d}</span>)}
                 </div>
                 <div className="grid grid-cols-7 gap-1">
                   {calendarDays.map((d, i) => d ? (
-                    <button key={i} onClick={() => { setFormData({...formData, date: getLocalDateString(d)}); setAvailableSlots([]); }} className={`aspect-square rounded-lg text-[12px] font-bold flex items-center justify-center transition-all ${formData.date === getLocalDateString(d) ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white hover:bg-white/10'}`}>
+                    <button key={i} onClick={() => { setFormData({...formData, date: getLocalDateString(d)}); setAvailableSlots([]); }} className={`aspect-square rounded-lg text-[10px] font-bold flex items-center justify-center transition-all ${formData.date === getLocalDateString(d) ? 'bg-[#075e54] text-white' : 'text-slate-400 hover:text-white'}`}>
                         {d.getDate()}
                       </button>
                   ) : <div key={i}/>)}
                 </div>
              </div>
-
-             <div className="space-y-3">
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] text-center mb-3">Available Slots</p>
-                {slotsLoading ? (
-                  <div className="flex flex-col items-center justify-center py-8 gap-2">
-                    <Loader2 className="animate-spin text-indigo-600" size={20} />
-                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Loading...</p>
-                  </div>
-                ) : availableSlots.length > 0 ? (
-                  <div className="grid grid-cols-3 gap-2">
-                    {availableSlots.map((s, i) => (
-                      <button key={i} onClick={() => setFormData({...formData, time: s.time})} className={`py-2.5 rounded-xl border font-bold text-[10px] uppercase tracking-wider transition-all ${formData.time === s.time ? 'border-indigo-600 bg-indigo-600 text-white shadow-md' : 'border-slate-200 bg-white text-slate-900 hover:border-indigo-300'}`}>
-                        {new Date(s.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8 px-6 bg-slate-50 rounded-[1.5rem] border border-dashed border-slate-200">
-                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-relaxed">No slots available.<br/>Select another date.</p>
-                  </div>
-                )}
+             <div className="space-y-2">
+                <div className="grid grid-cols-3 gap-1.5">
+                  {availableSlots.map((s, i) => (
+                    <button key={i} onClick={() => setFormData({...formData, time: s.time})} className={`py-2 rounded-lg border font-bold text-[9px] uppercase transition-all ${formData.time === s.time ? 'border-[#075e54] bg-[#075e54] text-white' : 'border-slate-200 bg-white text-slate-900'}`}>
+                      {new Date(s.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}
+                    </button>
+                  ))}
+                </div>
              </div>
-
-             {formData.time && (
-               <button onClick={() => setStep(4)} className="w-full mt-8 py-4 bg-slate-900 text-white rounded-[1.5rem] font-black uppercase text-[10px] tracking-[0.3em] shadow-lg animate-in fade-in slide-in-from-bottom-2">
-                 Continue
-               </button>
-             )}
-
-             <button onClick={prevStep} className="mt-8 w-full text-[9px] font-black uppercase text-slate-400 tracking-[0.3em] flex items-center justify-center gap-2 pb-6">
-                <ChevronLeft size={14}/> Back
-             </button>
+             {formData.time && <button onClick={() => setStep(4)} className="w-full mt-4 py-3 bg-slate-900 text-white rounded-xl font-black uppercase text-[9px] tracking-[0.2em] shadow-lg">Continue</button>}
+             <button onClick={() => setStep(2)} className="mt-4 w-full text-[7px] font-black uppercase text-slate-400 tracking-[0.2em] flex items-center justify-center gap-1 active:text-[#075e54] transition-colors"><ChevronLeft size={10}/> Back</button>
           </div>
         )}
 
         {step === 4 && (
-          <div className="animate-in fade-in slide-in-from-right-4 pb-32">
-             <h3 className="text-xl font-black text-slate-900 uppercase mb-6 text-center">Your Details</h3>
-             <div className="space-y-4">
+          <div className="animate-in fade-in slide-in-from-right-2">
+             <h3 className="text-sm font-black text-slate-900 uppercase mb-4 text-center">Verify Info</h3>
+             <div className="space-y-3">
                 <div className="space-y-1">
-                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest ml-3">Full Name</p>
-                  <input 
-                    type="text" 
-                    placeholder="Enter your name" 
-                    className="w-full p-4 bg-white border border-slate-200 rounded-[1.25rem] font-bold text-sm outline-none focus:border-indigo-600 transition-all placeholder:text-slate-300"
-                    value={formData.name} 
-                    onChange={e => setFormData({...formData, name: e.target.value})} 
-                  />
+                   <label className="text-[7px] font-black uppercase text-slate-600 tracking-widest ml-1">Full Name</label>
+                   <input type="text" placeholder="Your name as per passport" className={inputClass} value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
                 </div>
                 <div className="space-y-1">
-                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest ml-3">Phone Number</p>
-                  <input 
-                    type="tel" 
-                    placeholder="+971 -- --- ----" 
-                    className="w-full p-4 bg-white border border-slate-200 rounded-[1.25rem] font-bold text-sm outline-none focus:border-indigo-600 transition-all placeholder:text-slate-300"
-                    value={formData.phone} 
-                    onChange={e => setFormData({...formData, phone: e.target.value})} 
-                  />
+                   <label className="text-[7px] font-black uppercase text-slate-600 tracking-widest ml-1">Phone Number</label>
+                   <input type="tel" placeholder="+971..." className={inputClass} value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
                 </div>
                 <div className="space-y-1">
-                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest ml-3">Nationality</p>
-                  <select 
-                    className="w-full p-4 bg-white border border-slate-200 rounded-[1.25rem] font-bold text-sm outline-none focus:border-indigo-600 appearance-none transition-all text-slate-900"
-                    value={formData.nationality} 
-                    onChange={e => setFormData({...formData, nationality: e.target.value})}
-                  >
-                    <option value="" disabled>Select Country</option>
-                    {NATIONALITIES.map(n => <option key={n} value={n}>{n}</option>)}
-                  </select>
+                   <label className="text-[7px] font-black uppercase text-slate-600 tracking-widest ml-1">Nationality</label>
+                   <select className={`${inputClass} appearance-none`} value={formData.nationality} onChange={e => setFormData({...formData, nationality: e.target.value})}>
+                     <option value="">Select Nationality</option>
+                     {NATIONALITIES.map(n => <option key={n} value={n}>{n}</option>)}
+                   </select>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest ml-3">Email Address</p>
-                  <input 
-                    type="email" 
-                    placeholder="name@email.com" 
-                    className="w-full p-4 bg-white border border-slate-200 rounded-[1.25rem] font-bold text-sm outline-none focus:border-indigo-600 transition-all placeholder:text-slate-300"
-                    value={formData.email} 
-                    onChange={e => setFormData({...formData, email: e.target.value})} 
-                  />
+                   <label className="text-[7px] font-black uppercase text-slate-600 tracking-widest ml-1">Email Address</label>
+                   <input type="email" placeholder="email@example.com" className={inputClass} value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
                 </div>
              </div>
-
-             <button 
-               disabled={loading || !formData.name || !formData.email || !formData.phone || !formData.nationality} 
-               onClick={handleBook} 
-               className="w-full mt-8 py-4 bg-indigo-600 text-white rounded-[1.5rem] font-black uppercase tracking-widest text-[10px] disabled:opacity-30 shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2"
-             >
-                {loading ? <Loader2 className="animate-spin" size={18}/> : "Confirm Booking"}
-             </button>
-
-             <button onClick={prevStep} className="mt-6 w-full text-[9px] font-black uppercase text-slate-400 tracking-[0.3em] flex items-center justify-center gap-2">
-                <ChevronLeft size={14}/> Back
-             </button>
+             <button disabled={loading} onClick={handleBook} className="w-full mt-6 py-4 bg-[#075e54] text-white rounded-xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 shadow-xl active:scale-95 transition-all">{loading ? <Loader2 className="animate-spin" size={16}/> : "Confirm Booking"}</button>
+             <button onClick={() => setStep(3)} className="mt-4 w-full text-[7px] font-black uppercase text-slate-400 tracking-[0.2em] flex items-center justify-center gap-1 active:text-[#075e54] transition-colors"><ChevronLeft size={10}/> Back</button>
           </div>
         )}
       </main>

@@ -515,7 +515,7 @@ const App: React.FC = () => {
     <div className="flex flex-col h-screen h-[100dvh] bg-[#efe7de] overflow-hidden relative">
       <div className="absolute inset-0 opacity-[0.06] pointer-events-none bg-[url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png')] bg-repeat"></div>
 
-      <header className="px-3 pt-12 pb-3 bg-[#075e54] text-white flex items-center justify-between sticky top-0 z-[100] shrink-0 shadow-md">
+      <header className="px-3 pt-12 pb-2 bg-[#075e54] text-white flex items-center justify-between sticky top-0 z-[100] shrink-0 shadow-md">
         <div className="flex items-center gap-1">
           <button onClick={() => { 
             if (isLiveVoice) stopLiveVoice();
@@ -525,31 +525,31 @@ const App: React.FC = () => {
             <ChevronLeft size={24} />
           </button>
           <div className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-xl overflow-hidden border border-white/10">
+            <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center text-lg overflow-hidden border border-white/10">
               {selectedAgent?.flag}
             </div>
             <div className="min-w-0">
-              <h1 className="text-[16px] font-bold tracking-tight leading-tight truncate">{selectedAgent?.nativeName}</h1>
-              <p className="text-[10px] text-emerald-100/80 font-medium truncate">Online Advisor</p>
+              <h1 className="text-[15px] font-bold tracking-tight leading-tight truncate">{selectedAgent?.nativeName}</h1>
+              <p className="text-[9px] text-emerald-100/80 font-medium truncate">Online Advisor</p>
             </div>
           </div>
         </div>
         <div className="flex items-center gap-4">
           <button onClick={() => setShowBooking(true)} className="p-2 active:scale-90 opacity-90">
-            <Calendar size={20} />
+            <Calendar size={18} />
           </button>
         </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto px-4 py-4 space-y-2 ios-scroll bg-transparent relative z-10 custom-scrollbar pb-32">
+      <main className="flex-1 overflow-y-auto px-4 py-3 space-y-1.5 ios-scroll bg-transparent relative z-10 custom-scrollbar pb-28">
         {messages.map((msg) => (
           <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in duration-300`}>
-            <div className={`relative max-w-[85%] px-3 py-1.5 rounded-lg shadow-sm ${
+            <div className={`relative max-w-[85%] px-3 py-1 rounded-lg shadow-sm ${
               msg.role === 'user' 
                 ? 'bg-[#dcf8c6] text-[#303030] rounded-tr-none' 
                 : 'bg-white text-[#303030] rounded-tl-none'
             }`}>
-              <div className="text-[14.5px] leading-[1.4] pb-1 pr-12">
+              <div className="text-[14px] leading-[1.35] pb-1 pr-12">
                 {msg.content}
               </div>
               <div className="absolute bottom-1 right-1.5 flex items-center gap-1 opacity-50">
@@ -580,11 +580,11 @@ const App: React.FC = () => {
       </main>
 
       {!isLiveVoice && (
-        <footer className="px-2 pt-2 pb-6 bg-transparent sticky bottom-0 z-[110] shrink-0 safe-bottom">
+        <footer className="px-2 pt-2 pb-5 bg-transparent sticky bottom-0 z-[110] shrink-0 safe-bottom">
           <div className="flex items-end gap-2 max-w-xl mx-auto">
-            <div className="flex-1 bg-white rounded-[1.5rem] flex items-end px-2 py-1 shadow-sm border border-black/5">
-              <button className="p-2.5 text-[#919191] active:scale-90 shrink-0">
-                <Smile size={24} />
+            <div className="flex-1 bg-white rounded-[1.25rem] flex items-end px-1.5 py-1 shadow-sm border border-black/5">
+              <button className="p-2 text-[#919191] active:scale-90 shrink-0">
+                <Smile size={22} />
               </button>
               <textarea
                 ref={inputRef}
@@ -598,21 +598,21 @@ const App: React.FC = () => {
                   } 
                 }}
                 placeholder="Type a message"
-                className="flex-1 bg-transparent border-none outline-none px-2 py-2.5 text-[#303030] text-[16px] max-h-32 resize-none leading-tight"
+                className="flex-1 bg-transparent border-none outline-none px-2 py-2 text-[#303030] text-[15px] max-h-32 resize-none leading-tight"
                 style={{ height: 'auto' }}
               />
-              <button className="p-2.5 text-[#919191] active:scale-90 shrink-0">
-                <Paperclip size={24} className="-rotate-45" />
+              <button className="p-2 text-[#919191] active:scale-90 shrink-0">
+                <Paperclip size={22} className="-rotate-45" />
               </button>
             </div>
             <button 
               onClick={() => handleSend()}
               disabled={!input.trim() && !isTyping}
-              className={`w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-md shrink-0 active:scale-90 ${
+              className={`w-11 h-11 rounded-full flex items-center justify-center transition-all shadow-md shrink-0 active:scale-90 ${
                 !input.trim() ? 'bg-[#075e54] text-white' : 'bg-[#128c7e] text-white'
               }`}
             >
-              {!input.trim() ? <Mic size={22} /> : <Send size={22} className="ml-0.5" />}
+              {!input.trim() ? <Mic size={20} /> : <Send size={20} className="ml-0.5" />}
             </button>
           </div>
         </footer>

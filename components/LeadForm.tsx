@@ -126,44 +126,45 @@ Email: ${formData.email}
     }
   };
 
-  const inputClass = "w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-[14px] font-bold text-slate-900 outline-none focus:border-[#075e54] transition-all placeholder:text-slate-300";
-  const labelClass = "text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1 mb-1 block flex items-center gap-1.5";
+  // Compact styles
+  const inputClass = "w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-[13px] font-bold text-slate-900 outline-none focus:border-[#075e54] transition-all placeholder:text-slate-300";
+  const labelClass = "text-[9px] font-black uppercase text-slate-500 tracking-widest ml-1 mb-0.5 block flex items-center gap-1";
 
   return (
     <div className="fixed inset-0 z-[4000] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300">
-      <div className="bg-white w-full max-w-sm rounded-[2.5rem] shadow-2xl flex flex-col max-h-[90dvh] animate-in zoom-in duration-300 overflow-hidden border border-slate-100">
-        <header className="px-6 pt-7 pb-4 flex items-center justify-between border-b border-slate-50 shrink-0 bg-white">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-[#075e54] text-white rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-100">
-              <FileText size={20} />
+      <div className="bg-white w-full max-w-xs sm:max-w-sm rounded-[2rem] shadow-2xl flex flex-col max-h-[90dvh] animate-in zoom-in duration-300 overflow-hidden border border-slate-100">
+        <header className="px-5 pt-5 pb-3 flex items-center justify-between border-b border-slate-50 shrink-0 bg-white">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 bg-[#075e54] text-white rounded-xl flex items-center justify-center shadow-lg shadow-emerald-100">
+              <FileText size={18} />
             </div>
             <div>
-              <h2 className="text-[16px] font-[900] text-slate-900 uppercase leading-none tracking-tight">Verify Profile</h2>
-              <p className="text-[9px] font-black uppercase text-emerald-600 tracking-widest mt-1.5">Advisor Data Sync</p>
+              <h2 className="text-[14px] font-[900] text-slate-900 uppercase leading-none tracking-tight">Verify Profile</h2>
+              <p className="text-[8px] font-black uppercase text-emerald-600 tracking-widest mt-1">Advisor Data Sync</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 text-slate-400 active:scale-90 transition-all">
-            <X size={24}/>
+          <button onClick={onClose} className="p-1.5 text-slate-400 active:scale-90 transition-all">
+            <X size={20}/>
           </button>
         </header>
 
-        <main className="flex-1 overflow-y-auto px-6 py-6 space-y-4 ios-scroll custom-scrollbar text-left bg-[#fbfbfe]">
+        <main className="flex-1 overflow-y-auto px-5 py-4 space-y-3 ios-scroll custom-scrollbar text-left bg-[#fbfbfe]">
           {error && (
-            <div className="p-3.5 bg-red-50 text-red-700 rounded-2xl flex items-start gap-3 text-[12px] font-bold border border-red-100 animate-in shake">
-              <AlertCircle size={18} className="shrink-0 mt-0.5" /> 
+            <div className="p-3 bg-red-50 text-red-700 rounded-xl flex items-start gap-2 text-[11px] font-bold border border-red-100 animate-in shake">
+              <AlertCircle size={16} className="shrink-0 mt-0.5" /> 
               <span>{error}</span>
             </div>
           )}
 
-          <div className="space-y-4">
+          <div className="space-y-3">
             <div>
-              <label className={labelClass}><User size={13}/> Full Name</label>
+              <label className={labelClass}><User size={12}/> Full Name</label>
               <input type="text" className={inputClass} value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className={labelClass}><Globe size={13}/> Nationality</label>
+                <label className={labelClass}><Globe size={12}/> Nationality</label>
                 <input type="text" className={inputClass} value={formData.nationality} onChange={e => setFormData({...formData, nationality: e.target.value})} />
               </div>
               <div>
@@ -173,40 +174,40 @@ Email: ${formData.email}
             </div>
 
             <div>
-              <label className={labelClass}><Briefcase size={13}/> Profession</label>
+              <label className={labelClass}><Briefcase size={12}/> Profession</label>
               <input type="text" className={inputClass} value={formData.profession} onChange={e => setFormData({...formData, profession: e.target.value})} />
             </div>
 
             <div>
-              <label className={labelClass}><Phone size={13}/> Phone Number</label>
+              <label className={labelClass}><Phone size={12}/> Phone Number</label>
               <input type="tel" className={inputClass} value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} placeholder="+971 --" />
             </div>
 
             <div>
-              <label className={labelClass}><Mail size={13}/> Email Address</label>
+              <label className={labelClass}><Mail size={12}/> Email Address</label>
               <input type="email" className={inputClass} value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
             </div>
 
             <div>
-              <label className={labelClass}><Globe size={13}/> Desired Country</label>
+              <label className={labelClass}><Globe size={12}/> Desired Country</label>
               <input type="text" className={inputClass} value={formData.desiredCountry} onChange={e => setFormData({...formData, desiredCountry: e.target.value})} />
             </div>
           </div>
         </main>
 
-        <footer className="px-6 py-6 border-t border-slate-50 bg-white shrink-0">
+        <footer className="px-5 py-4 border-t border-slate-50 bg-white shrink-0">
           <button 
             disabled={loading}
             onClick={handleSubmit}
-            className="w-full py-4.5 bg-[#075e54] text-white rounded-2xl font-black uppercase tracking-[0.2em] text-[11px] flex items-center justify-center gap-3 shadow-xl active:scale-[0.98] transition-all disabled:opacity-50 h-14"
+            className="w-full h-12 bg-[#075e54] text-white rounded-xl font-black uppercase tracking-[0.2em] text-[10px] flex items-center justify-center gap-2 shadow-xl active:scale-[0.98] transition-all disabled:opacity-50"
           >
-            {loading ? <Loader2 size={20} className="animate-spin" /> : (
+            {loading ? <Loader2 size={18} className="animate-spin" /> : (
               <>
-                <CheckCircle size={20} /> Sync with Advisor
+                <CheckCircle size={18} /> Sync with Advisor
               </>
             )}
           </button>
-          <p className="text-center text-[8px] text-slate-400 font-black uppercase tracking-[0.3em] mt-5">Secured Advisor Data Transfer</p>
+          <p className="text-center text-[7px] text-slate-400 font-black uppercase tracking-[0.3em] mt-3">Secured Advisor Data Transfer</p>
         </footer>
       </div>
     </div>

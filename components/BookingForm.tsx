@@ -200,26 +200,26 @@ const BookingForm: React.FC<BookingFormProps> = ({ onClose }) => {
 
   if (isSuccess) return (
     <div className="fixed inset-0 z-[2000] bg-white flex flex-col items-center justify-center p-8 text-center animate-in zoom-in duration-300 font-jakarta h-[100dvh]">
-      <div className="w-24 h-24 bg-green-500 text-white rounded-[2rem] flex items-center justify-center shadow-2xl mb-8 vibrant-shadow">
-        <CalendarCheck size={48}/>
+      <div className="w-20 h-20 bg-green-500 text-white rounded-[2rem] flex items-center justify-center shadow-2xl mb-6 vibrant-shadow">
+        <CalendarCheck size={40}/>
       </div>
-      <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tight mb-4">Confirmed!</h2>
-      <p className="text-slate-500 font-medium mb-10 max-w-xs">Your consultation with {currentAdvisor?.name} has been scheduled successfully.</p>
+      <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight mb-2">Confirmed!</h2>
+      <p className="text-slate-500 text-sm font-medium mb-8 max-w-xs leading-relaxed">Your consultation with {currentAdvisor?.name} has been scheduled successfully.</p>
       
-      <div className="w-full max-w-sm bg-slate-50 border border-slate-100 rounded-[2rem] p-6 mb-10 text-left">
-        <div className="space-y-4">
+      <div className="w-full max-w-xs bg-slate-50 border border-slate-100 rounded-[1.5rem] p-5 mb-8 text-left shadow-sm">
+        <div className="space-y-3">
           <div>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Date</p>
-            <p className="font-bold text-slate-900">{formattedSelectedDate}</p>
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Date</p>
+            <p className="font-bold text-slate-900 text-sm">{formattedSelectedDate}</p>
           </div>
           <div>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Time (GST)</p>
-            <p className="font-bold text-slate-900">{new Date(formData.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}</p>
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Time (GST)</p>
+            <p className="font-bold text-slate-900 text-sm">{new Date(formData.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}</p>
           </div>
         </div>
       </div>
 
-      <button onClick={onClose} className="w-full max-w-[200px] py-5 bg-slate-900 text-white rounded-[1.5rem] font-black uppercase tracking-widest text-[10px] active:scale-95 transition-all shadow-xl">
+      <button onClick={onClose} className="w-full max-w-[180px] py-4 bg-slate-900 text-white rounded-[1.25rem] font-black uppercase tracking-widest text-[9px] active:scale-95 transition-all shadow-xl">
         Done
       </button>
     </div>
@@ -227,47 +227,47 @@ const BookingForm: React.FC<BookingFormProps> = ({ onClose }) => {
 
   return (
     <div className="fixed inset-0 z-[2000] bg-white flex flex-col animate-in slide-in-from-bottom duration-500 overflow-hidden font-jakarta h-[100dvh]">
-      <header className="px-6 pt-16 pb-4 flex items-center justify-between border-b border-slate-100 bg-white z-50 shrink-0">
+      <header className="px-5 pt-12 pb-3 flex items-center justify-between border-b border-slate-100 bg-white z-50 shrink-0">
         <button onClick={onClose} className="p-2 -ml-2 text-slate-950 active:scale-90">
-          <X size={28}/>
+          <X size={24}/>
         </button>
         <div className="flex flex-col items-center flex-1">
-           <div className="flex gap-1 mb-2">
+           <div className="flex gap-1 mb-1.5">
               {[1,2,3,4].map(i => (
-                <div key={i} className={`h-1 rounded-full transition-all duration-500 ${i === step ? 'w-6 bg-indigo-600' : i < step ? 'w-1.5 bg-indigo-200' : 'w-1.5 bg-slate-100'}`}></div>
+                <div key={i} className={`h-1 rounded-full transition-all duration-500 ${i === step ? 'w-5 bg-indigo-600' : i < step ? 'w-1.5 bg-indigo-200' : 'w-1.5 bg-slate-100'}`}></div>
               ))}
            </div>
-           <p className="text-[7px] font-black uppercase text-slate-400 tracking-[0.3em]">{["Select Expert", "Select Mode", "Pick Time", "Your Info"][step-1]}</p>
+           <p className="text-[7px] font-black uppercase text-slate-400 tracking-[0.3em]">{["Expert", "Mode", "Time", "Details"][step-1]}</p>
         </div>
-        <div className="w-10"></div>
+        <div className="w-8"></div>
       </header>
 
-      <main className="flex-1 overflow-y-auto px-6 py-8 space-y-8 bg-[#fdfdff] ios-scroll min-h-0">
+      <main className="flex-1 overflow-y-auto px-5 py-5 space-y-6 bg-[#fdfdff] ios-scroll min-h-0">
         {error && (
-          <div className="p-4 bg-red-50 text-red-600 text-[10px] font-black uppercase tracking-widest flex items-center gap-3 rounded-2xl border border-red-100 animate-in shake">
-            <AlertCircle size={18} className="shrink-0" /> 
+          <div className="p-3 bg-red-50 text-red-600 text-[9px] font-black uppercase tracking-widest flex items-center gap-2 rounded-xl border border-red-100 animate-in shake">
+            <AlertCircle size={14} className="shrink-0" /> 
             <span>{error}</span>
           </div>
         )}
 
         {step === 1 && (
-          <div className="animate-in fade-in slide-in-from-right-4 pb-24">
-             <h3 className="text-2xl font-black text-slate-900 uppercase mb-8 text-center">Consultant</h3>
-             <div className="grid grid-cols-1 gap-4">
+          <div className="animate-in fade-in slide-in-from-right-4 pb-20">
+             <h3 className="text-xl font-black text-slate-900 uppercase mb-5 text-center">Select Consultant</h3>
+             <div className="grid grid-cols-1 gap-3">
                 {ADVISORS.map(a => (
                   <button 
                     key={a.id} 
                     onClick={() => { setFormData({...formData, advisorId: a.id}); setStep(2); }} 
-                    className="flex items-center gap-4 p-5 rounded-[2rem] border-2 border-slate-100 bg-white hover:border-indigo-600 active:scale-[0.98] transition-all group"
+                    className="flex items-center gap-4 p-4 rounded-[1.5rem] border border-slate-200 bg-white hover:border-indigo-600 active:scale-[0.98] transition-all group shadow-sm"
                   >
-                    <div className="w-14 h-14 rounded-2xl bg-slate-950 text-white flex items-center justify-center font-black text-lg group-hover:bg-indigo-600 transition-colors">
+                    <div className="w-12 h-12 rounded-xl bg-slate-950 text-white flex items-center justify-center font-black text-base group-hover:bg-indigo-600 transition-colors">
                       {a.initials}
                     </div>
                     <div className="flex-1 text-left">
-                      <h4 className="font-black uppercase text-sm text-slate-900 mb-1">{a.name}</h4>
-                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{a.languages.join(' • ')}</p>
+                      <h4 className="font-black uppercase text-xs text-slate-900 mb-0.5">{a.name}</h4>
+                      <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest">{a.languages.join(' • ')}</p>
                     </div>
-                    <ChevronRight size={20} className="text-slate-200" />
+                    <ChevronRight size={18} className="text-slate-200" />
                   </button>
                 ))}
              </div>
@@ -275,115 +275,115 @@ const BookingForm: React.FC<BookingFormProps> = ({ onClose }) => {
         )}
 
         {step === 2 && (
-          <div className="animate-in fade-in slide-in-from-right-4 pb-24">
-             <h3 className="text-2xl font-black text-slate-900 uppercase mb-8 text-center">Consultation Mode</h3>
-             <div className="space-y-4">
+          <div className="animate-in fade-in slide-in-from-right-4 pb-20">
+             <h3 className="text-xl font-black text-slate-900 uppercase mb-5 text-center">Consultation Mode</h3>
+             <div className="space-y-3">
                 {[
                   { m: 'Google Meet', i: Video, desc: 'Online Video Call' },
                   { m: 'In-person Office', i: MapPin, desc: 'Dubai Office Visit' }
                 ].map((item) => (
-                  <button key={item.m} onClick={() => { setFormData({...formData, mode: item.m as ConsultationMode}); setStep(3); }} className="w-full flex items-center gap-5 p-6 rounded-[2rem] border-2 border-slate-100 bg-white hover:border-indigo-600 active:scale-[0.98] transition-all text-left group">
-                    <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-slate-50 text-slate-900 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors"><item.i size={28}/></div>
+                  <button key={item.m} onClick={() => { setFormData({...formData, mode: item.m as ConsultationMode}); setStep(3); }} className="w-full flex items-center gap-4 p-4 rounded-[1.5rem] border border-slate-200 bg-white hover:border-indigo-600 active:scale-[0.98] transition-all text-left group shadow-sm">
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-slate-50 text-slate-900 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors"><item.i size={24}/></div>
                     <div className="flex-1">
-                      <p className="font-black uppercase text-sm text-slate-900">{item.m}</p>
-                      <p className="text-[9px] font-bold text-slate-400 uppercase">{item.desc}</p>
+                      <p className="font-black uppercase text-xs text-slate-900">{item.m}</p>
+                      <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{item.desc}</p>
                     </div>
-                    <ChevronRight size={18} className="text-slate-200" />
+                    <ChevronRight size={16} className="text-slate-200" />
                   </button>
                 ))}
              </div>
-             <button onClick={prevStep} className="mt-10 w-full text-[10px] font-black uppercase text-slate-400 tracking-[0.3em] flex items-center justify-center gap-2">
-                <ChevronLeft size={16}/> Back to Experts
+             <button onClick={prevStep} className="mt-8 w-full text-[9px] font-black uppercase text-slate-400 tracking-[0.3em] flex items-center justify-center gap-2">
+                <ChevronLeft size={14}/> Back
              </button>
           </div>
         )}
 
         {step === 3 && (
-          <div className="animate-in fade-in slide-in-from-right-4 pb-32">
-             <h3 className="text-2xl font-black text-slate-900 uppercase mb-8 text-center">Calendar</h3>
+          <div className="animate-in fade-in slide-in-from-right-4 pb-24">
+             <h3 className="text-xl font-black text-slate-900 uppercase mb-5 text-center">Pick a Date & Time</h3>
              
-             <div className="bg-slate-950 rounded-[2.5rem] p-8 text-white mb-8 shadow-2xl">
-                <div className="flex justify-between items-center mb-8">
-                  <p className="font-black uppercase text-[12px] tracking-widest text-indigo-400">{viewDate.toLocaleString('default', { month: 'long', year: 'numeric' })}</p>
-                  <div className="flex gap-2">
-                    <button onClick={() => setViewDate(new Date(viewDate.setMonth(viewDate.getMonth()-1)))} className="p-2 bg-white/10 rounded-xl hover:bg-white/20 transition-colors"><ChevronLeft size={20}/></button>
-                    <button onClick={() => setViewDate(new Date(viewDate.setMonth(viewDate.getMonth()+1)))} className="p-2 bg-white/10 rounded-xl hover:bg-white/20 transition-colors"><ChevronRight size={20}/></button>
+             <div className="bg-slate-900 rounded-[2rem] p-5 text-white mb-6 shadow-xl">
+                <div className="flex justify-between items-center mb-4">
+                  <p className="font-black uppercase text-[11px] tracking-widest text-indigo-300">{viewDate.toLocaleString('default', { month: 'long', year: 'numeric' })}</p>
+                  <div className="flex gap-1">
+                    <button onClick={() => setViewDate(new Date(viewDate.setMonth(viewDate.getMonth()-1)))} className="p-1.5 bg-white/10 rounded-lg hover:bg-white/20 transition-colors"><ChevronLeft size={16}/></button>
+                    <button onClick={() => setViewDate(new Date(viewDate.setMonth(viewDate.getMonth()+1)))} className="p-1.5 bg-white/10 rounded-lg hover:bg-white/20 transition-colors"><ChevronRight size={16}/></button>
                   </div>
                 </div>
-                <div className="grid grid-cols-7 gap-3 text-center mb-4">
-                  {['S','M','T','W','T','F','S'].map(d => <span key={d} className="text-[10px] font-black text-slate-500 uppercase">{d}</span>)}
+                <div className="grid grid-cols-7 gap-2 text-center mb-2">
+                  {['S','M','T','W','T','F','S'].map(d => <span key={d} className="text-[9px] font-black text-slate-500 uppercase">{d}</span>)}
                 </div>
-                <div className="grid grid-cols-7 gap-3">
+                <div className="grid grid-cols-7 gap-1">
                   {calendarDays.map((d, i) => d ? (
-                    <button key={i} onClick={() => { setFormData({...formData, date: getLocalDateString(d)}); setAvailableSlots([]); }} className={`aspect-square rounded-xl text-[14px] font-black flex items-center justify-center transition-all ${formData.date === getLocalDateString(d) ? 'bg-indigo-600 text-white scale-110 shadow-lg' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>
+                    <button key={i} onClick={() => { setFormData({...formData, date: getLocalDateString(d)}); setAvailableSlots([]); }} className={`aspect-square rounded-lg text-[12px] font-bold flex items-center justify-center transition-all ${formData.date === getLocalDateString(d) ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white hover:bg-white/10'}`}>
                         {d.getDate()}
                       </button>
                   ) : <div key={i}/>)}
                 </div>
              </div>
 
-             <div className="space-y-4">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] text-center mb-4">Available Slots</p>
+             <div className="space-y-3">
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] text-center mb-3">Available Slots</p>
                 {slotsLoading ? (
-                  <div className="flex flex-col items-center justify-center py-10 gap-3">
-                    <Loader2 className="animate-spin text-indigo-600" />
-                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Checking Availability...</p>
+                  <div className="flex flex-col items-center justify-center py-8 gap-2">
+                    <Loader2 className="animate-spin text-indigo-600" size={20} />
+                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Loading...</p>
                   </div>
                 ) : availableSlots.length > 0 ? (
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-3 gap-2">
                     {availableSlots.map((s, i) => (
-                      <button key={i} onClick={() => setFormData({...formData, time: s.time})} className={`py-5 rounded-2xl border-2 font-black text-[12px] uppercase tracking-widest transition-all ${formData.time === s.time ? 'border-indigo-600 bg-indigo-600 text-white shadow-lg scale-[1.02]' : 'border-slate-100 bg-white text-slate-900 hover:border-slate-200'}`}>
+                      <button key={i} onClick={() => setFormData({...formData, time: s.time})} className={`py-2.5 rounded-xl border font-bold text-[10px] uppercase tracking-wider transition-all ${formData.time === s.time ? 'border-indigo-600 bg-indigo-600 text-white shadow-md' : 'border-slate-200 bg-white text-slate-900 hover:border-indigo-300'}`}>
                         {new Date(s.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}
                       </button>
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-12 px-6 bg-slate-50 rounded-[2rem] border border-dashed border-slate-200">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-relaxed">No sessions found for this date.<br/>Try another date.</p>
+                  <div className="text-center py-8 px-6 bg-slate-50 rounded-[1.5rem] border border-dashed border-slate-200">
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-relaxed">No slots available.<br/>Select another date.</p>
                   </div>
                 )}
              </div>
 
              {formData.time && (
-               <button onClick={() => setStep(4)} className="w-full mt-10 py-6 bg-slate-900 text-white rounded-[2rem] font-black uppercase text-[11px] tracking-[0.3em] shadow-xl animate-in fade-in slide-in-from-bottom-4">
+               <button onClick={() => setStep(4)} className="w-full mt-8 py-4 bg-slate-900 text-white rounded-[1.5rem] font-black uppercase text-[10px] tracking-[0.3em] shadow-lg animate-in fade-in slide-in-from-bottom-2">
                  Continue
                </button>
              )}
 
-             <button onClick={prevStep} className="mt-10 w-full text-[10px] font-black uppercase text-slate-400 tracking-[0.3em] flex items-center justify-center gap-2 pb-10">
-                <ChevronLeft size={16}/> Back to Mode
+             <button onClick={prevStep} className="mt-8 w-full text-[9px] font-black uppercase text-slate-400 tracking-[0.3em] flex items-center justify-center gap-2 pb-6">
+                <ChevronLeft size={14}/> Back
              </button>
           </div>
         )}
 
         {step === 4 && (
-          <div className="animate-in fade-in slide-in-from-right-4 pb-48">
-             <h3 className="text-2xl font-black text-slate-900 uppercase mb-8 text-center">Your Profile</h3>
-             <div className="space-y-5">
-                <div className="space-y-1.5">
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-4">Full Name</p>
+          <div className="animate-in fade-in slide-in-from-right-4 pb-32">
+             <h3 className="text-xl font-black text-slate-900 uppercase mb-6 text-center">Your Details</h3>
+             <div className="space-y-4">
+                <div className="space-y-1">
+                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest ml-3">Full Name</p>
                   <input 
                     type="text" 
                     placeholder="Enter your name" 
-                    className="w-full p-5 bg-white border-2 border-slate-100 rounded-[1.75rem] font-bold text-sm outline-none focus:border-indigo-600 transition-all"
+                    className="w-full p-4 bg-white border border-slate-200 rounded-[1.25rem] font-bold text-sm outline-none focus:border-indigo-600 transition-all placeholder:text-slate-300"
                     value={formData.name} 
                     onChange={e => setFormData({...formData, name: e.target.value})} 
                   />
                 </div>
-                <div className="space-y-1.5">
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-4">Phone Number</p>
+                <div className="space-y-1">
+                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest ml-3">Phone Number</p>
                   <input 
                     type="tel" 
                     placeholder="+971 -- --- ----" 
-                    className="w-full p-5 bg-white border-2 border-slate-100 rounded-[1.75rem] font-bold text-sm outline-none focus:border-indigo-600 transition-all"
+                    className="w-full p-4 bg-white border border-slate-200 rounded-[1.25rem] font-bold text-sm outline-none focus:border-indigo-600 transition-all placeholder:text-slate-300"
                     value={formData.phone} 
                     onChange={e => setFormData({...formData, phone: e.target.value})} 
                   />
                 </div>
-                <div className="space-y-1.5">
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-4">Nationality</p>
+                <div className="space-y-1">
+                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest ml-3">Nationality</p>
                   <select 
-                    className="w-full p-5 bg-white border-2 border-slate-100 rounded-[1.75rem] font-bold text-sm outline-none focus:border-indigo-600 appearance-none transition-all"
+                    className="w-full p-4 bg-white border border-slate-200 rounded-[1.25rem] font-bold text-sm outline-none focus:border-indigo-600 appearance-none transition-all text-slate-900"
                     value={formData.nationality} 
                     onChange={e => setFormData({...formData, nationality: e.target.value})}
                   >
@@ -391,12 +391,12 @@ const BookingForm: React.FC<BookingFormProps> = ({ onClose }) => {
                     {NATIONALITIES.map(n => <option key={n} value={n}>{n}</option>)}
                   </select>
                 </div>
-                <div className="space-y-1.5">
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-4">Email Address</p>
+                <div className="space-y-1">
+                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest ml-3">Email Address</p>
                   <input 
                     type="email" 
                     placeholder="name@email.com" 
-                    className="w-full p-5 bg-white border-2 border-slate-100 rounded-[1.75rem] font-bold text-sm outline-none focus:border-indigo-600 transition-all"
+                    className="w-full p-4 bg-white border border-slate-200 rounded-[1.25rem] font-bold text-sm outline-none focus:border-indigo-600 transition-all placeholder:text-slate-300"
                     value={formData.email} 
                     onChange={e => setFormData({...formData, email: e.target.value})} 
                   />
@@ -406,13 +406,13 @@ const BookingForm: React.FC<BookingFormProps> = ({ onClose }) => {
              <button 
                disabled={loading || !formData.name || !formData.email || !formData.phone || !formData.nationality} 
                onClick={handleBook} 
-               className="w-full mt-10 py-6 bg-indigo-600 text-white rounded-[2rem] font-black uppercase tracking-widest text-[11px] disabled:opacity-30 shadow-2xl active:scale-[0.98] transition-all flex items-center justify-center gap-3"
+               className="w-full mt-8 py-4 bg-indigo-600 text-white rounded-[1.5rem] font-black uppercase tracking-widest text-[10px] disabled:opacity-30 shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2"
              >
-                {loading ? <Loader2 className="animate-spin" size={20}/> : "Confirm Booking"}
+                {loading ? <Loader2 className="animate-spin" size={18}/> : "Confirm Booking"}
              </button>
 
-             <button onClick={prevStep} className="mt-8 w-full text-[10px] font-black uppercase text-slate-400 tracking-[0.3em] flex items-center justify-center gap-2">
-                <ChevronLeft size={16}/> Back to Calendar
+             <button onClick={prevStep} className="mt-6 w-full text-[9px] font-black uppercase text-slate-400 tracking-[0.3em] flex items-center justify-center gap-2">
+                <ChevronLeft size={14}/> Back
              </button>
           </div>
         )}

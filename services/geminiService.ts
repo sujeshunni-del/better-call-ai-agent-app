@@ -2,46 +2,46 @@ import { GoogleGenAI, Modality, Type, FunctionDeclaration } from "@google/genai"
 import { COMPANY_INFO, KNOWLEDGE_BASE } from "../constants";
 import { Agent, LeadData } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || 'FAKE_API_KEY_FOR_DEVELOPMENT' });
 
 const LANGUAGE_BEHAVIOR: Record<string, { greeting: string, style: string, nuance: string }> = {
   'Malayalam': { 
-    greeting: 'നമസ്കാരം (Namaskaram)', 
+    greeting: 'à´¨à´®à´¸àµà´à´¾à´°à´ (Namaskaram)', 
     style: 'Warm Keralite hospitality.',
     nuance: 'Be extremely respectful and use polite honorifics. Reflect the helpful and communal spirit of Kerala.' 
   },
   'Tamil': { 
-    greeting: 'வணக்கம் (Vanakkam)', 
+    greeting: 'à®µà®£à®à¯à®à®®à¯ (Vanakkam)', 
     style: 'Bright South Indian vibe.',
     nuance: 'Use respectful terms like "Anbu" (dear) or "Nanba" (friend) if the tone allows. Be enthusiastic and welcoming.' 
   },
   'Arabic': { 
-    greeting: 'السلام عليكم (Assalam Alaikum)', 
+    greeting: 'Ø§ÙØ³ÙØ§Ù Ø¹ÙÙÙÙ (Assalam Alaikum)', 
     style: 'Modern Middle-Eastern style.',
     nuance: 'Use traditional blessings like "Hayaak Allah". Be hospitable, generous with information, and dignified.' 
   },
   'Urdu': { 
-    greeting: 'السلام علیکم (Assalam Alaikum)', 
+    greeting: 'Ø§ÙØ³ÙØ§Ù Ø¹ÙÛÚ©Ù (Assalam Alaikum)', 
     style: 'Polite and sweet.',
     nuance: 'Use "Aap" instead of "Tum". Include polite phrases like "Janab" or "Tashreef Rakhiye". High emphasis on etiquette (Adab).' 
   },
   'Hindi': { 
-    greeting: 'नमस्ते (Namaste)', 
+    greeting: 'à¤¨à¤®à¤¸à¥à¤¤à¥ (Namaste)', 
     style: 'Friendly North Indian style.',
     nuance: 'Use "Aap" and "Ji". Be warm, approachable, and helpful like a family advisor.' 
   },
   'Telugu': { 
-    greeting: 'నమస్కారం (Namaskaram)', 
+    greeting: 'à°¨à°®à°¸à±à°à°¾à°°à° (Namaskaram)', 
     style: 'Smart and polite.',
     nuance: 'Be professional yet warm. Use respectful Telugu phrasing typical of formal advisory.' 
   },
   'Kannada': { 
-    greeting: 'നമസ്കാര (Namaskara)', 
+    greeting: 'à´¨à´®à´¸àµà´à´¾à´° (Namaskara)', 
     style: 'Youthful and direct.',
     nuance: 'Be friendly and efficient. Use the polite form of address common in Karnataka.' 
   },
   'Sinhala': { 
-    greeting: 'ආයුබෝවන් (Ayubowan)', 
+    greeting: 'à¶à¶ºà·à¶¶à·à·à¶±à· (Ayubowan)', 
     style: 'Traditional and helpful.',
     nuance: 'Incorporate the serene and respectful hospitality of Sri Lanka.' 
   },
@@ -61,7 +61,7 @@ const LANGUAGE_BEHAVIOR: Record<string, { greeting: string, style: string, nuanc
     nuance: 'Be clear, concise, and globally accessible in your choice of words.' 
   },
   'Egyptian': { 
-    greeting: 'أهلاً بيك (Ahlan bik)', 
+    greeting: 'Ø£ÙÙØ§Ù Ø¨ÙÙ (Ahlan bik)', 
     style: 'Helpful modern Egyptian style.',
     nuance: 'Use local friendly terms like "Ya Basha" or "Ya Rayyes" where appropriate. Be witty and very welcoming.' 
   }
